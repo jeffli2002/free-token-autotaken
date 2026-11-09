@@ -39,9 +39,16 @@ KNOWN = {
     'com.moonshot.kimichat': 'Kimi', 'com.deepseek.dsh': 'DeepSeek Harness'
 }
 CLAIM_BUNDLES = {'doubao-daily': 'com.work.pc.doubao', 'workbuddy-daily': 'com.tencent.workbuddy.mac'}
-PRODUCT_TYPES = [('llm','LLM / 模型 API'), ('coding_agent','Coding Agent'),
-                 ('agent','通用 Agent'), ('creative','创作工具'),
+PRODUCT_TYPES = [('llm','LLM 与模型 API'), ('coding_agent','Coding Agent'),
+                 ('agent','通用 Agent'), ('creative','创作与多模态'),
                  ('developer_platform','开发平台')]
+TYPE_DESCRIPTIONS = {
+    'llm':'模型调用、开发平台额度与 API 代金券',
+    'coding_agent':'编程助手、IDE 与代码 Agent 的产品内额度',
+    'agent':'面向日常任务的 Agent 活动',
+    'creative':'语音、图像、视频等创作额度',
+    'developer_platform':'应用开发和部署平台的 AI 权益',
+}
 
 def product_key(offer): return offer['product_id']
 
@@ -242,12 +249,13 @@ def render(token):
             offer_id, claim_period = key.rsplit(':', 1)
             bundle = CLAIM_BUNDLES.get(offer_id)
             offer = next((item for item in data['offers'] if item['id'] == offer_id), None)
+            if offer and offer['group']=='installed': continue
             name = offer['name'] if offer else KNOWN.get(bundle, offer_id)
             amount = record.get('claimed_amount') or record.get('amount')
             recorded_at = record.get('time', claim_period)
             amount_html=f'<div class="history-amount">{esc(str(amount))}</div>' if amount else ''
             rows.append(f'<article class="history-item"><div><strong>{esc(name)}</strong><p>{esc(claim_period)} · 本机客户端成功记录</p></div>{amount_html}{claimed_button()}<small>记录时间：{esc(recorded_at)}</small></article>')
-        return '<h2 class="history-title">已领取记录</h2>' + ''.join(rows) if rows else ''
+        return '<h3 class="history-title">其他已领取记录</h3>' + ''.join(rows) if rows else ''
     def cards(group, product_type=None):
         rows=[]
         for o in data['offers']:
@@ -258,7 +266,7 @@ def render(token):
             if group=='installed' and (status in ('deferred','needs_review','needs_accessibility') or (o['claim_mode']=='included' and status not in ('claimed','already_claimed'))): continue
             label={'claimed':'已领取','already_claimed':'已领取'}.get(status,'待领取' if group=='installed' else ('未安装' if o['group']=='other' else ''))
             cycle=o.get('cycle','once')
-            manual_label=('当日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
+            manual_label=('今日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
             if cycle in ('daily','monthly'):
                 schedule_label='Agent 每日代领' if cycle=='daily' else 'Agent 每月代领'
                 scheduled=o.get('schedule',{}).get('enabled',False)
@@ -297,19 +305,21 @@ def render(token):
             show_pill=bool(label and status not in ('claimed','already_claimed'))
             pill=f'<span class="pill">{label}</span>' if show_pill else ''
             card_class='offer' if show_pill else 'offer no-pill'
-            rows.append(f'<article class="{card_class}"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div>{pill}<div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>领取周期：{esc(cycle)} · 来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
+            cycle_label={'daily':'每日','monthly':'每月','once':'一次性'}.get(cycle,cycle)
+            rows.append(f'<article class="{card_class}"><div class="offer-identity"><h3>{vendor}</h3><p>{name}</p></div><div class="amount"><small>活动额度 · {esc(cycle_label)}</small><strong>{amount}</strong></div>{pill}<div class="actions">{action}</div><details><summary>领取条件与适用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or ('' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
     def more_sections():
         sections=[]
         for type_id, title in PRODUCT_TYPES:
-            if any(o['group']!='installed' and o['product_type']==type_id for o in data['offers']):
-                sections.append(f'<section class="offer-group"><h3 class="group-title">{title}</h3>{cards("more",type_id)}</section>')
+            count=sum(o['group']!='installed' and o['product_type']==type_id for o in data['offers'])
+            if count:
+                sections.append(f'<section class="offer-group"><div class="group-heading"><h3 class="group-title">{title}</h3><span>{count} 项活动</span></div><p class="group-intro">{TYPE_DESCRIPTIONS[type_id]}</p>{cards("more",type_id)}</section>')
         return ''.join(sections) or '<p class="empty">暂无更多已核实活动。</p>'
     state=load_state()
     today=datetime.now(TZ).date().isoformat()
     confirmed=sum(1 for key,record in state['claims'].items() if key.endswith(':'+today) and record.get('status') in ('claimed','already_claimed'))
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']
-    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">概览</a><a href="#other">更多</a><a href="#apps">本机软件</a></nav><main><h1 id="installed">已安装的活动与额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div>{claim_history()}{cards('installed')}<h2 id="other">更多</h2>{more_sections()}<h2 id="apps">本机识别</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
+    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">我的活动</a><a href="#other">发现更多</a><a href="#apps">本机软件</a></nav><main><h1>免费额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div><section class="installed-section" id="installed"><div class="section-heading"><h2>已安装活动</h2><p>今天可领取的活动与已启用的代领任务</p></div>{cards('installed')}{claim_history()}</section><section class="discovery-section" id="other"><div class="section-heading"><h2>发现更多</h2><p>按产品用途浏览官方已核实的活动</p></div>{more_sections()}</section><h2 id="apps">本机已识别软件</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
     if load_state()['suppressed_products'] or load_state()['dismissed']:
         body = body.replace('<h2 id="apps">', button('restore','all','恢复全部已隐藏产品','quiet') + '<h2 id="apps">')
     return body.encode()
@@ -318,6 +328,7 @@ CSS=b'''*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;backgr
 CSS+=b'''.history-title{font-size:28px;margin:34px 0 6px}.history-help{color:#68736f;margin:0 0 14px}.history-item{display:grid;grid-template-columns:minmax(180px,1fr) minmax(170px,1fr) auto;gap:12px;align-items:center;background:#fff;border:1px solid #dce8e2;border-radius:14px;padding:16px 22px;margin:10px 0}.history-item strong{font-size:18px}.history-item p{margin:5px 0 0;color:#6c7773;font-size:13px}.history-amount{font-weight:600;color:#386258}.history-item small{grid-column:1/-1;color:#79847f}.claimed{background:#e1f0e9;color:#0b7668;border-color:#c8e2d7;cursor:default}.claimed:disabled{opacity:1}@media(max-width:800px){.history-item{grid-template-columns:1fr auto}.history-amount{grid-column:1}.history-item button{grid-column:2;grid-row:1/3}}'''
 CSS+=b'''.history-item .claimed{grid-column:3}@media(max-width:800px){.history-item .claimed{grid-column:2}}'''
 CSS+=b'''.offer.no-pill{grid-template-columns:minmax(220px,1.2fr) minmax(180px,1fr) minmax(300px,auto)}.offer.no-pill .actions{grid-column:3;flex-wrap:nowrap;align-items:center;justify-content:flex-end}.offer-group{margin-top:28px}.offer-group .group-title{font-size:24px;margin:22px 0 12px}.dismiss{font-size:13px}.dismiss:hover{color:#a43b36}@media(max-width:800px){.offer.no-pill{grid-template-columns:1fr 1fr}.offer.no-pill .actions{grid-column:1/-1;flex-wrap:wrap;justify-content:flex-start}}'''
+CSS+=b'''.section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;border-bottom:1px solid #e5e9e5;padding-bottom:12px;margin:48px 0 18px}.section-heading h2{margin:0}.section-heading p{margin:0 0 4px;color:#6c7773;font-size:14px}.group-heading{display:flex;align-items:baseline;gap:12px}.group-heading span{color:#77837e;font-size:13px}.offer-group .group-title{margin:0}.group-intro{color:#77837e;font-size:14px;margin:5px 0 14px}.offer-identity h3{margin:0 0 5px}.offer-identity p{font-size:14px;line-height:1.5}.offer .amount{display:flex;flex-direction:column;gap:6px}.offer .amount small{font-size:12px;font-weight:500;color:#7c8883}.offer .amount strong{font-size:18px;line-height:1.4}.installed-section .offer{border-color:#cfe3d9}.history-title{font-family:Georgia,"Songti SC",serif;font-size:25px;margin:32px 0 12px}@media(max-width:800px){.section-heading{display:block;margin-top:36px}.section-heading p{margin-top:7px}.offer .amount{grid-column:1/-1}.offer.no-pill .actions{grid-column:1/-1}}'''
 
 class Handler(BaseHTTPRequestHandler):
     token = secrets.token_urlsafe(24)

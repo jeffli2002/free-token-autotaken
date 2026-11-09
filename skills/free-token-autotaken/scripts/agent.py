@@ -221,7 +221,7 @@ def render(token):
         for o in data['offers']:
             if o['group'] != group or o['dismissed']: continue
             status=o['record'].get('status','')
-            label={'claimed':'已领取','already_claimed':'已领取','deferred':'已延后','needs_review':'需核对','needs_accessibility':'需授权'}.get(status,('待核对' if o['claim_mode']=='guide' and group=='installed' else '待领取') if group=='installed' else ('无需安装' if group=='web' else '未安装'))
+            label={'claimed':'已领取','already_claimed':'已领取','deferred':'已延后','needs_review':'需核对','needs_accessibility':'需授权'}.get(status,('额度待核对' if o['claim_mode']=='included' else '待领取') if group=='installed' else ('无需安装' if group=='web' else '未安装'))
             cycle=o.get('cycle','once')
             manual_label=('当日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
             if cycle in ('daily','monthly'):
@@ -230,20 +230,28 @@ def render(token):
             else:
                 schedule_label=''
                 scheduled=False
-            if group=='installed' and o['claim_mode']=='desktop' and o['id'] in CLAIM_BUNDLES:
+            if group=='installed' and o['claim_mode']=='included':
+                manual_action=''
+            elif group=='installed' and o['claim_mode']=='desktop' and o['id'] in CLAIM_BUNDLES:
                 manual_action=(f'<span class="done">本周期已领取</span>' if status in ('claimed','already_claimed') else button('claim',o['id'],manual_label,'primary'))
             else:
                 manual_action=f'<a class="button primary" href="{esc(o["official_url"])}" target="_blank" rel="noopener">{manual_label}</a>'
-            if cycle in ('daily','monthly') and group=='installed':
+            if cycle in ('daily','monthly') and group=='installed' and o['claim_mode']!='included':
                 if o['auto_supported']:
                     schedule_action=button('unschedule' if scheduled else 'schedule',o['id'],('暂停' + schedule_label) if scheduled else schedule_label,'')
                 else:
-                    schedule_action=f'<button class="disabled" type="button" disabled title="当前活动尚无经核验的客户端自动领取流程">{schedule_label}（暂不可用）</button>'
+                    schedule_action=''
                 action=manual_action+schedule_action
             else:
                 action=manual_action
             if group!='installed': action += button('dismiss',o['id'],'暂不需要','quiet')
             messages=[]
+            if o['claim_mode']=='included' and group=='installed':
+                messages.append('这是套餐包含的月度额度，请在客户端核对本月余额。')
+                today=datetime.now(TZ).date().isoformat()
+                claims=load_state()['claims']
+                if any(bundle in o['bundle_ids'] and claims.get(oid+':'+today,{}).get('status') in ('claimed','already_claimed') for oid,bundle in CLAIM_BUNDLES.items()):
+                    messages.append(f'本机记录 {o["vendor"]} 今日领取状态为成功；该记录不代表本月基础积分余额。')
             if o.get('notice'): messages.append(o['notice'])
             if status: messages.append(o['record'].get('message',''))
             if o.get('schedule',{}).get('enabled'): messages.append('已启用本机定时领取；电脑空闲且客户端运行时检查。')
@@ -257,9 +265,11 @@ def render(token):
             source_url=esc(o['source_url']); official_url=esc(o['official_url'])
             rows.append(f'<article class="offer"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div><span class="pill">{label}</span><div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>领取周期：{esc(cycle)} · 来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or '<p class="empty">暂无已核实活动。请将厂商官方页面核实后的项目加入市场目录。</p>'
-    confirmed=sum(1 for o in data['offers'] if o['record'].get('status') in ('claimed','already_claimed'))
+    state=load_state()
+    today=datetime.now(TZ).date().isoformat()
+    confirmed=sum(1 for key,record in state['claims'].items() if key.endswith(':'+today) and record.get('status') in ('claimed','already_claimed'))
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']
-    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">概览</a><a href="#other">更多活动</a><a href="#apps">本机软件</a></nav><main><h1 id="installed">已安装，Agent 帮我领</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本周期已确认领取 <b>{confirmed}</b> 项 <span>后台任务只在电脑空闲时尝试</span></div>{button('run','all','立即检查／领取已支持活动','primary')}{cards('installed')}<h2 id="other">更多活动</h2><h3 class="group-title">未安装客户端活动</h3>{cards('other')}<h3 class="group-title">无需安装</h3>{cards('web')}<h2 id="apps">本机识别</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
+    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">概览</a><a href="#other">更多活动</a><a href="#apps">本机软件</a></nav><main><h1 id="installed">已安装的活动与额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日标记成功的领取记录 <b>{confirmed}</b> 项 <span>具体额度请在对应客户端核对</span></div>{cards('installed')}<h2 id="other">更多活动</h2><h3 class="group-title">未安装客户端活动</h3>{cards('other')}<h3 class="group-title">无需安装</h3>{cards('web')}<h2 id="apps">本机识别</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
     if load_state()['dismissed']:
         body = body.replace('<h2 id="apps">', button('restore','all','显示隐藏活动','quiet') + '<h2 id="apps">')
     return body.encode()
@@ -279,8 +289,6 @@ class Handler(BaseHTTPRequestHandler):
         if form.get('csrf',[''])[0] != self.token: self.send_error(403); return
         oid=form.get('id',[''])[0]
         if self.path=='/claim': claim(oid)
-        elif self.path=='/run':
-            for target in CLAIM_BUNDLES: claim(target)
         elif self.path=='/schedule': schedule_offer(oid)
         elif self.path=='/unschedule': unschedule_offer(oid)
         elif self.path=='/dismiss':

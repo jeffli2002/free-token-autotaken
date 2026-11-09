@@ -223,7 +223,7 @@
       "com.tencent.workbuddy.mac"
     ],
     "requires_install": true,
-    "claim_mode": "guide",
+    "claim_mode": "included",
     "official_url": "https://www.workbuddy.cn/docs/workbuddy/Pricing",
     "download_url": "https://www.workbuddy.cn/",
     "source_url": "https://www.workbuddy.cn/docs/workbuddy/Pricing",

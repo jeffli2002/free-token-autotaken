@@ -6,8 +6,13 @@ if /usr/bin/curl --silent --fail "http://127.0.0.1:8765/" >/dev/null; then
 fi
 APP_DIR="${0:A:h}"
 DATA_DIR="$HOME/Library/Application Support/FreeTokenAgent"
+PYTHON_BIN="$(command -v python3)"
+if [[ -z "$PYTHON_BIN" ]] || ! "$PYTHON_BIN" -c 'import sys; raise SystemExit(sys.version_info < (3, 10))'; then
+  echo "Python 3.10 or newer is required. Install Python, then retry." >&2
+  exit 1
+fi
 mkdir -p "$DATA_DIR"
-/usr/bin/nohup /usr/bin/python3 "$APP_DIR/scripts/agent.py" serve >"$DATA_DIR/web.log" 2>&1 &
+/usr/bin/nohup "$PYTHON_BIN" "$APP_DIR/scripts/agent.py" serve >"$DATA_DIR/web.log" 2>&1 &
 for i in {1..20}; do
   if /usr/bin/curl --silent --fail "http://127.0.0.1:8765/" >/dev/null; then
     open "http://127.0.0.1:8765"

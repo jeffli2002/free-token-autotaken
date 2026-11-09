@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Local-only free quota dashboard and claim coordinator (macOS)."""
 import argparse
 import fcntl
@@ -109,7 +110,12 @@ def render(token):
             label={'claimed':'已领取','already_claimed':'已领取','deferred':'已延后','needs_review':'需核对','needs_accessibility':'需授权'}.get(status,('待核对' if o['claim_mode']=='guide' and group=='installed' else '待领取') if group=='installed' else ('无需安装' if group=='web' else '未安装'))
             action=(f'<span class="done">本周期已领取</span>' if status in ('claimed','already_claimed') else button('claim',o['id'],'立即领取','primary')) if o['claim_mode']=='desktop' and group=='installed' else f'<a class="button" href="{esc(o["download_url"] if group=="other" else o["official_url"])}" target="_blank" rel="noopener">查看官网</a>'
             if group!='installed': action += button('dismiss',o['id'],'暂不需要','quiet')
-            rows.append(f'<article class="offer"><div><h3>{esc(o["vendor"])}</h3><p>{esc(o["name"])}</p></div><div class="amount">{esc(o["amount"])}</div><span class="pill">{label}</span><div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{esc(o["requirements"])}</p><p>适用范围：{esc(o["scope"])}</p><p>来源状态：{esc(o.get("verification_state", "AIHOT 收录；以官方页面为准"))} · 标注日期：{esc(o["verified_on"])}</p><a href="{esc(o["source_url"])}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{esc(o["official_url"])}" target="_blank" rel="noopener">厂商页面 ↗</a>{'<p class="note">'+esc(o['record'].get('message',''))+'</p>' if status else ''}</details></article>')
+            note = '<p class="note">' + esc(o['record'].get('message', '')) + '</p>' if status else ''
+            vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
+            requirements=esc(o['requirements']); scope=esc(o['scope'])
+            verification=esc(o.get('verification_state', '官方待核实')); verified_on=esc(o['verified_on'])
+            source_url=esc(o['source_url']); official_url=esc(o['official_url'])
+            rows.append(f'<article class="offer"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div><span class="pill">{label}</span><div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or '<p class="empty">暂无已核实活动。请将厂商官方页面核实后的项目加入市场目录。</p>'
     confirmed=sum(1 for o in data['offers'] if o['record'].get('status') in ('claimed','already_claimed'))
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']

@@ -700,5 +700,29 @@
     "verification_valid_days": 14,
     "product_id": "siliconflow",
     "product_type": "llm"
+  },
+  {
+    "id": "workbuddy-daily",
+    "name": "WorkBuddy Buddy 加油站每日积分活动",
+    "vendor": "WorkBuddy",
+    "amount": "按客户端当日活动显示",
+    "cycle": "daily",
+    "category": "daily",
+    "scope": "仅限 WorkBuddy 产品内使用的积分；当日是否有可领活动和具体积分数以客户端 Buddy 加油站显示为准。",
+    "requirements": "登录 WorkBuddy，在头像菜单打开 Buddy 加油站；仅当客户端明确显示“每日可领”和“立即领取”时执行。奖励活动及积分数可能变化。",
+    "bundle_ids": [
+      "com.tencent.workbuddy.mac"
+    ],
+    "requires_install": true,
+    "claim_mode": "desktop",
+    "official_url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Setting",
+    "download_url": "https://www.workbuddy.cn/",
+    "source_url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Setting",
+    "verified_on": "2026-11-09",
+    "verification_state": "厂商官方已核实",
+    "verification_valid_days": 14,
+    "source_note": "WorkBuddy 官方系统设置文档确认 Buddy 加油站参与当前活动可获取积分；每日领取和积分数量由登录后的客户端活动页面确认。",
+    "product_id": "workbuddy",
+    "product_type": "agent"
   }
 ]

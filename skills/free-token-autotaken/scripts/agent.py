@@ -211,6 +211,10 @@ def dashboard():
     market = catalog()
     meta = json.loads((ROOT / 'market_meta.json').read_text())
     installed = scan(); state = load_state(); entries=[]
+    # This generic WorkBuddy activity is shown only when this device has a
+    # concrete prior client success or an explicitly created daily schedule.
+    if not any(key.startswith('workbuddy-daily:') for key in state['claims']) and 'workbuddy-daily' not in state['schedules']:
+        market=[offer for offer in market if offer['id']!='workbuddy-daily']
     hidden=set(state['suppressed_products'])
     hidden.update(product_key(offer) for offer in market if offer['id'] in state['dismissed'])
     for offer in market:
@@ -256,7 +260,7 @@ def render(token):
             cycle=o.get('cycle','once')
             manual_label=('当日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
             if cycle in ('daily','monthly'):
-                schedule_label='每日领取' if cycle=='daily' else '每月领取'
+                schedule_label='Agent 每日代领' if cycle=='daily' else 'Agent 每月代领'
                 scheduled=o.get('schedule',{}).get('enabled',False)
             else:
                 schedule_label=''
@@ -271,7 +275,7 @@ def render(token):
                 manual_action=f'<a class="button primary" href="{esc(o["official_url"])}" target="_blank" rel="noopener">{manual_label}</a>'
             if cycle in ('daily','monthly') and group=='installed' and o['claim_mode']!='included':
                 if o['auto_supported']:
-                    schedule_action=button('unschedule' if scheduled else 'schedule',o['id'],('暂停' + schedule_label) if scheduled else schedule_label,'')
+                    schedule_action=button('unschedule' if scheduled else 'schedule',o['id'],('暂停每日代领' if cycle=='daily' else '暂停每月代领') if scheduled else schedule_label,'')
                 else:
                     schedule_action=''
                 action=manual_action+schedule_action
@@ -284,7 +288,7 @@ def render(token):
             if o.get('schedule',{}).get('enabled'): messages.append('已启用本机定时领取；电脑空闲且客户端运行时检查。')
             if o.get('schedule',{}).get('disabled_at'): messages.append('本机定时领取已暂停。')
             if o['auto_supported'] and cycle in ('daily','monthly') and not scheduled:
-                messages.append('启用定时领取后会创建本机 Skill 和任务；仅支持已核验的客户端流程。')
+                messages.append('启用后会创建本机 Skill 和每日定时任务。')
             note = '<p class="note">' + esc(' '.join(x for x in messages if x)) + '</p>' if messages else ''
             vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
             requirements=esc(o['requirements']); scope=esc(o['scope'])
@@ -292,7 +296,7 @@ def render(token):
             source_url=esc(o['source_url']); official_url=esc(o['official_url'])
             pill=f'<span class="pill">{label}</span>' if label else ''
             rows.append(f'<article class="offer{' no-pill' if not label else ''}"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div>{pill}<div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>领取周期：{esc(cycle)} · 来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
-        return ''.join(rows) or ('<p class="empty">当前没有已确认的可领取活动。</p>' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
+        return ''.join(rows) or ('' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
     def more_sections():
         sections=[]
         for type_id, title in PRODUCT_TYPES:

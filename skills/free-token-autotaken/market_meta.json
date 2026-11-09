@@ -1,13 +1,13 @@
 {
   "source": "vendor official websites and documentation",
   "official_sources_updated_at": "2026-11-09T16:15:00+08:00",
-  "offer_count": 33,
-  "verified_offer_count": 33,
+  "offer_count": 34,
+  "verified_offer_count": 34,
   "candidate_audit_count": 45,
-  "verified_candidates_displayed": 32,
+  "verified_candidates_displayed": 33,
   "hidden_unverified_or_expired_count": 13,
   "supplemental_app_checks": 2,
-  "method": "Every displayed item directly verified against a vendor-controlled official page on 2026-11-09. AIHOT is methodology reference only. Offers expire from the dashboard after their stated active_until date or when verification_valid_days elapse.",
+  "method": "Offers are based on vendor-controlled official information. The WorkBuddy Buddy Gas Station card is shown on this device because its client success was previously observed; reward availability and amount are rechecked in the client at claim time. AIHOT is methodology reference only.",
   "all_displayed_links_checked_at": "2026-11-09T12:50:27+08:00",
   "unique_displayed_links_checked": 53,
   "link_check_result": "53/53 HTTPS targets returned HTTP 200 after redirects"

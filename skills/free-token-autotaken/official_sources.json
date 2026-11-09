@@ -294,6 +294,16 @@
       "offer_ids": [
         "siliconflow-free-priced-models"
       ]
+    },
+    {
+      "vendor": "WorkBuddy",
+      "url": "https://www.workbuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Setting",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "workbuddy-daily"
+      ]
     }
   ]
 }

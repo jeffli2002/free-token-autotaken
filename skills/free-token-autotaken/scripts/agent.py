@@ -294,7 +294,7 @@ def render(token):
             requirements=esc(o['requirements']); scope=esc(o['scope'])
             verification=esc(o.get('verification_state', '官方待核实')); verified_on=esc(o['verified_on'])
             source_url=esc(o['source_url']); official_url=esc(o['official_url'])
-            pill=f'<span class="pill">{label}</span>' if label else ''
+            pill=f'<span class="pill">{label}</span>' if label and status not in ('claimed','already_claimed') else ''
             rows.append(f'<article class="offer{' no-pill' if not label else ''}"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div>{pill}<div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>领取周期：{esc(cycle)} · 来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or ('' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
     def more_sections():

@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+claim
+.DS_Store
+.env
+*.log
+state.json
+verified-offers*.json

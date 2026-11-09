@@ -1,7 +1,11 @@
 {
   "source": "vendor official websites and documentation",
-  "official_sources_updated_at": "2026-11-09T12:05:00+08:00",
-  "offer_count": 3,
-  "verified_offer_count": 3,
-  "method": "Direct verification from vendor-controlled documentation; AIHOT is methodology reference only"
+  "official_sources_updated_at": "2026-11-09T16:15:00+08:00",
+  "offer_count": 33,
+  "verified_offer_count": 33,
+  "candidate_audit_count": 45,
+  "verified_candidates_displayed": 32,
+  "hidden_unverified_or_expired_count": 13,
+  "supplemental_app_checks": 2,
+  "method": "Every displayed item directly verified against a vendor-controlled official page on 2026-11-09. AIHOT is methodology reference only. Offers expire from the dashboard after their stated active_until date or when verification_valid_days elapse."
 }

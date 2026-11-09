@@ -1,0 +1,479 @@
+{
+  "description": "逐条审阅旧候选清单中的 45 条线索。此文件是核验审计记录，不是展示目录；dashboard 只读取 market_catalog.json 与 market_extra.json。未核验、失效或被官方资料否定的条目不展示。AIHOT 仅作为采集方法参考。",
+  "checked_on": "2026-11-09",
+  "candidate_count": 45,
+  "displayed_verified_count": 32,
+  "hidden_count": 13,
+  "candidates": [
+    {
+      "candidate_id": "doubao-daily",
+      "candidate_title": "豆包电脑版每天签到领 200 额度",
+      "vendor": "豆包",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzkzMTY2MzMzMQ%3D%3D&mid=2247486879&idx=1&sn=0f55124545d18969d471854997a40521",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "官方公众号活动链接当前无法读取全文，无法确认规则和有效期；不展示。"
+    },
+    {
+      "candidate_id": "offer-223b765ef8fd",
+      "candidate_title": "秒悟每天登录领 2000 积分",
+      "vendor": "秒悟",
+      "source_url": "https://docs.meoo.com/pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Meoo 官方定价页确认免费档每日首次登录 2,000 积分；新用户首月 5,000 积分。已分别按官方条款展示。"
+    },
+    {
+      "candidate_id": "offer-a4abda98faf8",
+      "candidate_title": "魔搭社区每天送 200 魔粒调模型 API",
+      "vendor": "魔搭",
+      "source_url": "https://www.modelscope.cn/posts/435591",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "官方帖子页面不可读取正文，无法核验每日 200 魔粒权益；不展示。"
+    },
+    {
+      "candidate_id": "offer-4a510796dcee",
+      "candidate_title": "Cloudflare Workers AI 每天免费 1 万 Neurons",
+      "vendor": "Cloudflare Workers AI",
+      "source_url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Cloudflare 官方 Workers AI 价格页确认 Free 计划每日 10,000 Neurons。"
+    },
+    {
+      "candidate_id": "offer-6d3a40af7720",
+      "candidate_title": "fal FLUX 3 Max 每日免登录生成 1 个视频",
+      "vendor": "fal",
+      "source_url": "https://fal.ai/sandbox?models=db8o064regj1armnir30&op=video.text_to_video",
+      "audit_status": "excluded_contradicted",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "fal 官方页面当前将此 FLUX 3 Max 文生视频标为按次付费。另一个历史 FLUX 3 每日免费页面现已重定向至 FLUX 3 Max 付费页，无法确认仍有效；不展示。"
+    },
+    {
+      "candidate_id": "offer-31ba3734dbe5",
+      "candidate_title": "MiniMax Code 每天签到领 400 积分",
+      "vendor": "MiniMax Code",
+      "source_url": "https://agent.minimax.cn/docs/code/account/usage",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "MiniMax Code 官方用量文档确认每日签到 400 积分，第 4、7 天 1,000，到账后 30 天有效。"
+    },
+    {
+      "candidate_id": "offer-eb5460dda812",
+      "candidate_title": "Qoder 国际版 Qoduck 每天限免",
+      "vendor": "Qoder",
+      "source_url": "https://docs.qoder.com/zh/events/qoduck-free",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Qoder 官方活动文档确认 2026-11-07 起国际版个人用户 Qoduck 每日免费额度，额度因档位而异。"
+    },
+    {
+      "candidate_id": "offer-7fd18965648f",
+      "candidate_title": "Qoder 每天 10 点领 100 Credits",
+      "vendor": "Qoder",
+      "source_url": "https://docs.qoder.cn/events/100credits",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Qoder CN 官方活动文档确认每天主动领 100 Credits，规则和有效期明确。"
+    },
+    {
+      "candidate_id": "offer-6476b06957fb",
+      "candidate_title": "TRAE 每天签到领 100 积分",
+      "vendor": "TRAE",
+      "source_url": "https://docs.trae.cn/ide_plans-and-billing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "TRAE 官方文档确认免费用户每日签到 100 积分，31 天有效。"
+    },
+    {
+      "candidate_id": "workbuddy-daily",
+      "candidate_title": "WorkBuddy 每天领 100 积分",
+      "vendor": "WorkBuddy",
+      "source_url": "https://www.workbuddy.cn/",
+      "audit_status": "excluded_contradicted",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "WorkBuddy 官方定价文档不支持每日 100 积分；仅确认体验版每月 500 积分，按已核实的月权益展示。"
+    },
+    {
+      "candidate_id": "offer-5f739d163b58",
+      "candidate_title": "Drex 每月 5 美元模型调用额度",
+      "vendor": "Drex",
+      "source_url": "https://console.nace.ai/docs/drex/reference/pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Drex 官方价格文档确认新账户 $5 注册余额和符合条件账户每月 $5 allowance，已分别展示并注明收费风险。"
+    },
+    {
+      "candidate_id": "offer-29108a1554b0",
+      "candidate_title": "蚂蚁百灵每月 1 日送 10 元抵扣券",
+      "vendor": "蚂蚁百灵",
+      "source_url": "https://developer.ant-ling.com/zh-CN/docs/getting-started/changelog/billing-upgrade/",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "蚂蚁百灵官方计费升级说明确认新计费平台每月发放 ¥10 券，且新用户注册有一次性 ¥20 券。"
+    },
+    {
+      "candidate_id": "offer-57e11fc24f23",
+      "candidate_title": "EdgeOne Makers 每月 50 万 Token",
+      "vendor": "EdgeOne Makers",
+      "source_url": "https://pages.edgeone.ai/zh/document/limits-and-quotas",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "EdgeOne Makers 官方免费额度文档确认免费版每月 500,000 Tokens。"
+    },
+    {
+      "candidate_id": "offer-eee61a075fd4",
+      "candidate_title": "书生·端砚测试期每月送免费墨点",
+      "vendor": "书生·端砚",
+      "source_url": "https://www.shlab.org.cn/news/5444294",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "上海人工智能实验室官方新闻页未说明“每月免费墨点”权益或有效规则；不展示。"
+    },
+    {
+      "candidate_id": "offer-cdc57e313af9",
+      "candidate_title": "ElevenLabs 免费档每月 1 万积分",
+      "vendor": "ElevenLabs",
+      "source_url": "https://elevenlabs.io/pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "ElevenLabs 官方价格页确认 Free 档每月 10,000 credits。"
+    },
+    {
+      "candidate_id": "offer-baf45c14f676",
+      "candidate_title": "TRAE 国内版每月 500 积分",
+      "vendor": "TRAE",
+      "source_url": "https://www.trae.cn/pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "TRAE 官方定价页确认 Free 档每月 500 积分；产品内使用。"
+    },
+    {
+      "candidate_id": "offer-e903943ac56e",
+      "candidate_title": "WorkBuddy 体验版每月 500 积分",
+      "vendor": "WorkBuddy",
+      "source_url": "https://www.workbuddy.cn/docs/workbuddy/Pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "WorkBuddy 官方定价页确认体验版每月 500 基础积分；未发现每日 100 的官方依据。"
+    },
+    {
+      "candidate_id": "offer-91b16ea21b62",
+      "candidate_title": "Zed 在读大学生每月 10 美元 AI 额度，持续一年",
+      "vendor": "Zed",
+      "source_url": "https://zed.dev/education",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Zed 官方 Education 和定价文档确认在读大学生免费一年，每月 $10 AI token credits。"
+    },
+    {
+      "candidate_id": "offer-fbe776390153",
+      "candidate_title": "华为码道受邀注册额外领 1000 积分",
+      "vendor": "华为码道",
+      "source_url": "https://support.huaweicloud.com/offers-codeartsagent/codeartsagent_offers_0002.html",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "华为云码道官方活动页更新时间 2026-10-28，确认邀请奖励各 1,000 积分，活动至 2026-11-15。"
+    },
+    {
+      "candidate_id": "offer-2d62655c035e",
+      "candidate_title": "智谱 AutoClaw 国内版双十一登录领 5000 万 Tokens",
+      "vendor": "智谱",
+      "source_url": "https://autoclaw.zhipuai.cn/blog/news/M11W2/",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "AutoClaw 官方页面确认 2026-11-09 至 11-15 登录领 50M Tokens；已按官方当前活动更新，而非旧标题中的金额。"
+    },
+    {
+      "candidate_id": "offer-7d2610792c97",
+      "candidate_title": "WorkBuddy／CodeBuddy Hy4 限时免费额度",
+      "vendor": "WorkBuddy",
+      "source_url": "https://www.tencent.com/zh-cn/tencent-launches-hy4-joining-the-ranks-of-the-worlds-leading-open-source-ai-models/",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "腾讯 Hy4 发布公告未佐证 WorkBuddy/CodeBuddy 限时免费额度；不展示。"
+    },
+    {
+      "candidate_id": "offer-d3758fc47811",
+      "candidate_title": "Drex 新人 5 美元模型调用额度",
+      "vendor": "Drex",
+      "source_url": "https://console.nace.ai/docs/drex/reference/pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Drex 官方价格文档确认注册奖励余额 $5。"
+    },
+    {
+      "candidate_id": "offer-ac57c3d71d78",
+      "candidate_title": "Zed 14 天试用领 5 美元模型额度",
+      "vendor": "Zed",
+      "source_url": "https://zed.dev/docs/account/plans-and-pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Zed 官方计划与试用页确认试用 14 天内含 $5 GPT-6 Luna 用量，结束自动转 Free。"
+    },
+    {
+      "candidate_id": "offer-e8866aec5bb4",
+      "candidate_title": "百度千帆新用户送 20 元代金券",
+      "vendor": "百度千帆",
+      "source_url": "https://cloud.baidu.com/campaign/event/bigevent/index.html",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "百度智能云千帆官方产品文档确认新用户实名认证送 ¥20 代金券。"
+    },
+    {
+      "candidate_id": "offer-fb212f2993f1",
+      "candidate_title": "蚂蚁百灵新用户或升级账户送 20 元",
+      "vendor": "蚂蚁百灵",
+      "source_url": "https://developer.ant-ling.com/zh-CN/docs/getting-started/changelog/billing-upgrade/",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "蚂蚁百灵官方公告确认新用户注册得 ¥20 券。"
+    },
+    {
+      "candidate_id": "offer-379b2f806ed2",
+      "candidate_title": "硅基流动实名认证送 16 元代金券",
+      "vendor": "硅基流动",
+      "source_url": "https://www.siliconflow.cn/news/od7wj9rr23p95uhihmhrombp",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "硅基流动官方“推荐官”计划确认实名券 ¥16，活动至 2026-12-31，券有效 180 天。"
+    },
+    {
+      "candidate_id": "offer-ca191d578d05",
+      "candidate_title": "Qoder 新人 300 Credits 加两周 Pro",
+      "vendor": "Qoder",
+      "source_url": "https://docs.qoder.cn/product-overview/billing-description",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Qoder CN 官方账号与订阅文档确认免费体验版为 2 周 Pro 试用及 300 Credits。"
+    },
+    {
+      "candidate_id": "offer-d7ca2ca7e137",
+      "candidate_title": "阿里云百炼新人各模型通常送 100 万 Token",
+      "vendor": "阿里云百炼",
+      "source_url": "https://help.aliyun.com/zh/model-studio/new-free-quota",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "阿里云百炼官方文档确认北京地域新用户免费推理额度、90 天期限及实名条件；各模型以官方清单为准。"
+    },
+    {
+      "candidate_id": "offer-5f3c73ecb2ef",
+      "candidate_title": "超算互联网新用户领 1000 万 Token",
+      "vendor": "超算互联网",
+      "source_url": "https://www.scnet.cn/home/subject/maas/index.html",
+      "audit_status": "excluded_expired",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "超算互联网官方 MaaS 活动页显示“活动已结束”；不展示。"
+    },
+    {
+      "candidate_id": "deepseek-harness-welcome",
+      "candidate_title": "DeepSeek Harness 登录送 6 元",
+      "vendor": "DeepSeek Harness",
+      "source_url": "https://deepseek.com/zh/harness/",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "DeepSeek Harness 官方首页和文档未佐证登录送 ¥6；不展示。"
+    },
+    {
+      "candidate_id": "offer-9f00efcb0056",
+      "candidate_title": "TokenHub 新人语言与多模态模型送 100 万 Token",
+      "vendor": "TokenHub",
+      "source_url": "https://cloud.tencent.com/document/product/1823/130053",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "腾讯云 TokenHub 官方文档确认活动至 2026-12-31，语言模型每个 100 万 tokens，1 年有效。"
+    },
+    {
+      "candidate_id": "offer-96d031150452",
+      "candidate_title": "火山方舟新用户每个文本模型送 50 万 Token",
+      "vendor": "火山方舟",
+      "source_url": "https://docs.volcengine.com/docs/ark/free-inference-quota",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "火山方舟官方文档确认新用户按模型提供免费推理额度；具体数额因模型/账号展示而异，原“每模型统一 50 万”不准确。"
+    },
+    {
+      "candidate_id": "offer-71b9741a9ab2",
+      "candidate_title": "豆包电脑版新用户领 30 天免费体验",
+      "vendor": "豆包",
+      "source_url": "https://mp.weixin.qq.com/s?__biz=MzkzMTY2MzMzMQ%3D%3D&mid=2247486879&idx=1&sn=0f55124545d18969d471854997a40521",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "官方公众号文章链接无法读取正文，无法确认 30 天体验条款；不展示。"
+    },
+    {
+      "candidate_id": "offer-3056b579c1ea",
+      "candidate_title": "秒悟新用户首月 5000 积分",
+      "vendor": "秒悟",
+      "source_url": "https://docs.meoo.com/pricing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "Meoo 官方定价页确认新用户首月 5,000 积分，已展示。"
+    },
+    {
+      "candidate_id": "offer-1e8c56d83b19",
+      "candidate_title": "微信小程序送 10 亿 Token 与 10 万张生图",
+      "vendor": "微信小程序送",
+      "source_url": "https://docs.cloudbase.net/ai/ai-inspire-plan",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "CloudBase 官方活动细则确认二期至 2026-12-31，10 亿 token、10 万张图，6 个月有效且限小程序/云开发。"
+    },
+    {
+      "candidate_id": "offer-e3a076027b95",
+      "candidate_title": "TRAE 国内版新用户注册送 2000 积分",
+      "vendor": "TRAE",
+      "source_url": "https://docs.trae.cn/ide_plans-and-billing",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "TRAE 官方文档确认免费用户新注册一次性 2,000 积分，31 天有效。"
+    },
+    {
+      "candidate_id": "offer-14bf877c8109",
+      "candidate_title": "WorkBuddy 关联 Buddy One 送 100 积分",
+      "vendor": "WorkBuddy",
+      "source_url": "https://www.workbuddy.cn/buddyone/",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "WorkBuddy Buddy One 官方页面未显示关联送 100 积分的活动规则；不展示。"
+    },
+    {
+      "candidate_id": "offer-c4fee65b60ff",
+      "candidate_title": "ZCode 新用户 5 天体验，每天 800 万 Token",
+      "vendor": "ZCode",
+      "source_url": "https://zcode.z.ai/cn/docs/configuration",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "ZCode 官方文档确认首次连接 BigModel 后 5 天体验额度、每日 800 万 token；已按最新规则更正。"
+    },
+    {
+      "candidate_id": "offer-05a2a7f420d4",
+      "candidate_title": "阿里云在读学生领 300 元模型抵扣金",
+      "vendor": "阿里云",
+      "source_url": "https://help.aliyun.com/zh/model-studio/introduction-to-yungongkaiwu",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "阿里云百炼官方活动文档确认学生 ¥300 抵扣金，活动至 2027-03-31，领取后一年有效。"
+    },
+    {
+      "candidate_id": "offer-3bd249d6c0cc",
+      "candidate_title": "蚂蚁百灵 Ling-3.2-flash 限时免费调用",
+      "vendor": "蚂蚁百灵",
+      "source_url": "https://developer.ant-ling.com/zh-CN/docs/models/price/",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "百灵官方定价页仍写“Ling-3.2-flash 上线前两周”，但未给出明确活动日期，无法核实当前仍有效；不展示。"
+    },
+    {
+      "candidate_id": "offer-987f84aa81ab",
+      "candidate_title": "商汤日日新公测：每 5 小时 12 万通用积分",
+      "vendor": "商汤日日新",
+      "source_url": "https://platform.sensenova.cn/docs#points",
+      "audit_status": "verified_corrected",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "商汤官方 Token Plan 当前显示公测免费，每 5 小时 60,000 积分；更正旧线索中的 120,000。"
+    },
+    {
+      "candidate_id": "offer-eb63d070cf84",
+      "candidate_title": "OpenCode 限时免费用 DeepSeek、GLM、Inkling 等模型",
+      "vendor": "OpenCode",
+      "source_url": "https://opencode.ai/docs/console/models/",
+      "audit_status": "verified_active",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "OpenCode 官方模型目录列示免费模型，免费模型限 OpenCode 内使用且目录动态变化。"
+    },
+    {
+      "candidate_id": "offer-ca69d79a2759",
+      "candidate_title": "StepAudio 3 四款预览模型限时免费调用",
+      "vendor": "StepAudio",
+      "source_url": "https://platform.stepfun.com/docs/zh/guides/pricing/details",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "StepFun 官方资料仅确认 StepAudio 3 预览模型可调用；在官方价格页未能确认原声称的四款限时免费规则；不展示。"
+    },
+    {
+      "candidate_id": "offer-f96ac0f40049",
+      "candidate_title": "OCR、语音、向量与生图模型免费调用",
+      "vendor": "OCR、语音、向量与生图模型免费调用",
+      "source_url": "https://www.siliconflow.cn/pricing",
+      "audit_status": "verified_corrected",
+      "decision": "displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "SiliconFlow 官方价格页当前按模型列出免费标价，覆盖 PaddleOCR-VL OCR、bge 向量/重排、Kolors 生图与 XingChen/SenseVoice 语音等；仅展示具体标价为免费的模型并提示限流。"
+    },
+    {
+      "candidate_id": "offer-66ed1c974961",
+      "candidate_title": "SoMark OXR 免费解析文档 API",
+      "vendor": "SoMark",
+      "source_url": "https://somark.cn/oxr",
+      "audit_status": "excluded_unverified",
+      "decision": "hidden",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "SoMark 官方 OXR 页面确认产品及 API 入口，但未确认“免费”价格/额度；不展示。"
+    }
+  ],
+  "supplemental_checks": [
+    {
+      "candidate_id": "kimi-code-free-promotion-check",
+      "vendor": "Kimi Code",
+      "source_url": "https://www.kimi.com/code/docs/kimi-code/membership.html",
+      "audit_status": "no_free_campaign_confirmed",
+      "decision": "not_displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "官方说明 Kimi Code 属于 Kimi 会员权益并共享会员额度；未找到官方免费活动。Kimi 开放平台 ¥15 API 券不抵扣 Kimi Code 会员额度。"
+    },
+    {
+      "candidate_id": "deepseek-harness-welcome-6-cny-check",
+      "vendor": "DeepSeek Harness",
+      "source_url": "https://deepseek.com/zh/harness/",
+      "audit_status": "no_free_campaign_confirmed",
+      "decision": "not_displayed",
+      "checked_on": "2026-11-09",
+      "evidence_or_reason": "DeepSeek Harness 官方主页说明其面向全球开放测试，但官方页面/文档未提供“登录送 ¥6”的依据；不展示该奖励。"
+    }
+  ]
+}

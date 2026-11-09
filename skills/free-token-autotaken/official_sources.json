@@ -1,5 +1,5 @@
 {
-  "description": "活动和权益信息直接取自模型厂商官方页面。AIHOT 仅作采集方法参考。",
+  "description": "Displayed offers are sourced directly from vendor-controlled official pages. AIHOT is methodology reference only.",
   "sources": [
     {
       "vendor": "Kimi 开放平台",
@@ -9,6 +9,17 @@
       "checked_on": "2026-11-09",
       "offer_ids": [
         "kimi-api-new-user-15-cny"
+      ]
+    },
+    {
+      "vendor": "秒悟 Meoo",
+      "url": "https://docs.meoo.com/pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "meoo-daily-2000",
+        "meoo-new-user-5000"
       ]
     },
     {
@@ -22,6 +33,169 @@
       ]
     },
     {
+      "vendor": "MiniMax Code",
+      "url": "https://code.minimax.cn/docs/code/account/usage",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "minimax-code-daily-400"
+      ]
+    },
+    {
+      "vendor": "Qoder 国际版",
+      "url": "https://docs.qoder.com/zh/events/qoduck-free",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "qoder-intl-qoduck-daily"
+      ]
+    },
+    {
+      "vendor": "Qoder CN",
+      "url": "https://docs.qoder.cn/events/100credits",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "qoder-cn-daily-100"
+      ]
+    },
+    {
+      "vendor": "Qoder CN",
+      "url": "https://docs.qoder.cn/product-overview/account-and-subscription",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "qoder-cn-welcome-300"
+      ]
+    },
+    {
+      "vendor": "TRAE 国内版",
+      "url": "https://docs.trae.cn/ide_plans-and-billing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "trae-daily-100",
+        "trae-new-user-2000"
+      ]
+    },
+    {
+      "vendor": "TRAE 国内版",
+      "url": "https://www.trae.cn/pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "trae-monthly-500"
+      ]
+    },
+    {
+      "vendor": "WorkBuddy",
+      "url": "https://www.workbuddy.cn/docs/workbuddy/Pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "workbuddy-monthly-500"
+      ]
+    },
+    {
+      "vendor": "Drex",
+      "url": "https://console.nace.ai/docs/drex/reference/pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "drex-new-user-5",
+        "drex-monthly-5"
+      ]
+    },
+    {
+      "vendor": "蚂蚁百灵",
+      "url": "https://developer.ant-ling.com/zh-CN/docs/getting-started/changelog/billing-upgrade/",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "antling-monthly-10",
+        "antling-new-user-20"
+      ]
+    },
+    {
+      "vendor": "EdgeOne Makers",
+      "url": "https://pages.edgeone.ai/zh/document/limits-and-quotas",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "edgeone-makers-monthly-500k"
+      ]
+    },
+    {
+      "vendor": "ElevenLabs",
+      "url": "https://elevenlabs.io/pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "elevenlabs-free-10k"
+      ]
+    },
+    {
+      "vendor": "Zed",
+      "url": "https://zed.dev/education",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "zed-student-10-month"
+      ]
+    },
+    {
+      "vendor": "Zed",
+      "url": "https://zed.dev/docs/account/plans-and-pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "zed-trial-5"
+      ]
+    },
+    {
+      "vendor": "华为云码道 CodeArts",
+      "url": "https://support.huaweicloud.com/offers-codeartsagent/codeartsagent_offers_0002.html",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "huaweicloud-codearts-invite-1000"
+      ]
+    },
+    {
+      "vendor": "智谱 AutoClaw",
+      "url": "https://autoclaw.zhipuai.cn/blog/news/M11W2/",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "autoclaw-1111-50m"
+      ]
+    },
+    {
+      "vendor": "百度千帆",
+      "url": "https://cloud.baidu.com/doc/QIANFAN/index.html",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "baidu-qianfan-new-user-20"
+      ]
+    },
+    {
       "vendor": "阿里云百炼",
       "url": "https://help.aliyun.com/zh/model-studio/new-free-quota/",
       "source_type": "official-docs",
@@ -29,6 +203,96 @@
       "checked_on": "2026-11-09",
       "offer_ids": [
         "aliyun-bailian-new-user-model-quota"
+      ]
+    },
+    {
+      "vendor": "腾讯云 TokenHub",
+      "url": "https://cloud.tencent.com/document/product/1823/130053",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "tokenhub-new-user-1m"
+      ]
+    },
+    {
+      "vendor": "火山引擎方舟",
+      "url": "https://docs.volcengine.com/docs/ark/free-inference-quota?lang=zh",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "volcengine-ark-free-inference-new-user"
+      ]
+    },
+    {
+      "vendor": "腾讯云开发 CloudBase",
+      "url": "https://docs.cloudbase.net/ai/ai-inspire-plan",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "cloudbase-miniapp-growth-ai-package"
+      ]
+    },
+    {
+      "vendor": "阿里云百炼",
+      "url": "https://help.aliyun.com/zh/model-studio/introduction-to-yungongkaiwu",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "aliyun-yungongkaiwu-student-300"
+      ]
+    },
+    {
+      "vendor": "商汤日日新 SenseNova",
+      "url": "https://www.sensenova.cn/token-plan",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "sensenova-beta-free-60k"
+      ]
+    },
+    {
+      "vendor": "OpenCode",
+      "url": "https://opencode.ai/docs/console/models/",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "opencode-free-models"
+      ]
+    },
+    {
+      "vendor": "硅基流动 SiliconFlow",
+      "url": "https://www.siliconflow.cn/news/od7wj9rr23p95uhihmhrombp",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "siliconflow-verified-16-voucher"
+      ]
+    },
+    {
+      "vendor": "ZCode",
+      "url": "https://zcode.z.ai/cn/docs/configuration",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "zcode-new-user-5d-8m"
+      ]
+    },
+    {
+      "vendor": "硅基流动 SiliconFlow",
+      "url": "https://www.siliconflow.cn/pricing",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "siliconflow-free-priced-models"
       ]
     }
   ]

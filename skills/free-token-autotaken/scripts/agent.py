@@ -25,7 +25,12 @@ def catalog():
     market = json.loads((ROOT / 'market_catalog.json').read_text())
     extra = json.loads((ROOT / 'market_extra.json').read_text())
     seen = {x['id'] for x in market}
-    return market + [x for x in extra if x['id'] not in seen]
+    today = datetime.now(TZ).date()
+    offers = market + [x for x in extra if x['id'] not in seen]
+    # Render only offers with direct official verification; automatically hide stale or expired evidence.
+    return [x for x in offers if x.get('verification_state') == '厂商官方已核实'
+            and (not x.get('active_until') or today <= date.fromisoformat(x['active_until']))
+            and (today - date.fromisoformat(x['verified_on'])).days <= int(x.get('verification_valid_days', 14))]
 TZ = ZoneInfo('Asia/Shanghai')
 KNOWN = {
     'com.openai.codex': 'Codex', 'com.todesktop.230313mzl4w4u92': 'Cursor',

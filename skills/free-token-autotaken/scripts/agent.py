@@ -390,9 +390,10 @@ def render(token, flash=None):
             if group=='installed' and (status in ('deferred','needs_review','needs_accessibility') or (o['claim_mode']=='included' and status not in ('claimed','already_claimed'))): continue
             label={'claimed':'已领取','already_claimed':'已领取'}.get(status,'待领取' if group=='installed' else ('未安装' if o['group']=='other' else ''))
             cycle=o.get('cycle','once')
+            cycle_label={'daily':'每日','monthly':'每月','once':'一次性'}.get(cycle,cycle)
             manual_label=('今日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
             if cycle in ('daily','monthly'):
-                schedule_label='Agent 每日代领' if cycle=='daily' else 'Agent 每月代领'
+                schedule_label='开启 Agent 每日自动领取' if cycle=='daily' else '开启 Agent 每月自动领取'
                 automation_status=o.get('automation_status','absent')
                 scheduled=automation_status=='running'
             else:
@@ -410,7 +411,7 @@ def render(token, flash=None):
             if cycle in ('daily','monthly') and group=='installed' and o['claim_mode']!='included':
                 if o['auto_supported']:
                     if automation_status=='external_running':
-                        schedule_action='<button class="claimed" type="button" disabled>其他任务在代领</button>'
+                        schedule_action=''
                     elif automation_status=='skill_only':
                         schedule_action='<button class="claimed" type="button" disabled>已有同活动 Skill</button>'
                     elif scheduled:
@@ -437,6 +438,14 @@ def render(token, flash=None):
                 task=o['automation_task']
                 task_text=f'{task["agent"]} 已启用“{task["name"]}”；本助手不会重复创建或暂停它'
             task_status=f'<div class="task-status">{task_text}</div>' if group=='installed' and task_text else ''
+            claim_mode_label=''
+            if group=='installed' and o['claim_mode']!='included':
+                if automation_status in ('running','external_running'):
+                    claim_mode_label='<span class="claim-mode-badge auto">Agent 自动领取中</span>'
+                elif cycle in ('daily','monthly') and o['auto_supported']:
+                    claim_mode_label='<span class="claim-mode-badge">支持 Agent 自动领取</span>'
+                else:
+                    claim_mode_label='<span class="claim-mode-badge manual">手动领取</span>'
             vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
             requirements=esc(o['requirements']); scope=esc(o['scope'])
             verification=esc(o.get('verification_state', '官方待核实')); verified_on=esc(o['verified_on'])
@@ -444,8 +453,7 @@ def render(token, flash=None):
             show_pill=bool(label and status not in ('claimed','already_claimed'))
             pill=f'<span class="pill">{label}</span>' if show_pill else ''
             card_class='offer' if show_pill else 'offer no-pill'
-            cycle_label={'daily':'每日','monthly':'每月','once':'一次性'}.get(cycle,cycle)
-            rows.append(f'<article class="{card_class}"><div class="offer-identity"><h3>{vendor}</h3><p>{name}</p></div><div class="amount"><small>活动额度 · {esc(cycle_label)}</small><strong>{amount}</strong></div>{pill}<div class="actions">{action}</div>{task_status}<details><summary>领取条件与适用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
+            rows.append(f'<article class="{card_class}"><div class="offer-identity"><h3>{vendor}</h3><p>{name}</p>{claim_mode_label}</div><div class="amount"><small>活动额度 · {esc(cycle_label)}</small><strong>{amount}</strong></div>{pill}<div class="actions">{action}</div>{task_status}<details><summary>领取条件与适用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or ('' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
     def more_sections():
         sections=[]
@@ -475,6 +483,7 @@ CSS+=b'''.section-heading{display:flex;align-items:end;justify-content:space-bet
 CSS+=b'''.task-status{grid-column:1/-1;color:#087b68;background:#edf7f1;border-radius:8px;padding:9px 13px;font-size:13px}.notice-overlay{position:fixed;inset:0;background:rgba(18,38,33,.38);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}.notice-dialog{width:min(460px,100%);background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:28px}.notice-dialog h2{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-size:24px;margin:0 0 12px}.notice-dialog p{color:#53625c;line-height:1.7;margin:0 0 22px}.notice-dialog button{min-width:96px}'''
 CSS+=b'''h1,h2,.history-title{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-weight:700}'''
 CSS+=b'''.hero-banner{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;border-radius:18px;margin:0 0 28px;border:1px solid #dce9e2}@media(max-width:800px){.hero-banner{aspect-ratio:2/1;object-position:left center}}'''
+CSS+=b'''.claim-mode-badge{display:inline-block;margin-top:10px;padding:5px 9px;border-radius:7px;background:#eef5f1;color:#376a5c;font-size:12px;font-weight:600}.claim-mode-badge.auto{background:#dcefe5;color:#087b68}.claim-mode-badge.manual{background:#f2f2ef;color:#64716a}'''
 
 class Handler(BaseHTTPRequestHandler):
     token = secrets.token_urlsafe(24)

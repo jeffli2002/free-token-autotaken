@@ -30,6 +30,8 @@ The dashboard binds to `127.0.0.1` only. Installed-app scanning and claim histor
 
 In **更多**, offers are grouped by product type. **× 不再显示** saves the product ID locally, hiding all current and later offers for that product. **恢复全部已隐藏产品** reverses that preference.
 
+Installed activities are grouped by one-time, daily, and monthly cycles. When at least two one-time activities remain to process, the dashboard offers a batch claim flow with per-activity progress and official links for steps requiring user action. When at least two supported daily activities need a schedule, a separate batch action creates their daily tasks after checking for existing Skills and tasks across local Agents. Already-running external tasks do not count toward the batch threshold. A check mark appears only after the client confirms a claim or the scheduler confirms task creation.
+
 ## Background claims and privacy
 
 Background claims are opt-in for each recurring offer through its “每日领取” or “每月领取” button. The helper only operates supported offers, only when the target app is already open, and only after the Mac has been idle for two minutes. It does not launch or activate apps. Accessibility automation can still change the target app's visible content while idle. Login challenges, changed layouts, or missing success feedback stop the attempt. Unsupported activities cannot be scheduled. Pause a task using its schedule button in the dashboard.

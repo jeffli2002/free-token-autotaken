@@ -13,6 +13,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import threading
 import tomllib
 from datetime import datetime, date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -25,6 +26,9 @@ ROOT = SCRIPT_DIR.parent
 BANNER_FILE = ROOT / 'assets' / 'agent-auto-claim-banner.png'
 DATA = Path.home() / 'Library/Application Support/FreeTokenAgent'
 STATE_FILE = DATA / 'state.json'
+BATCH_LOCK = threading.Lock()
+BATCH_RUNS = {}
+SCHEDULE_LOCK = threading.Lock()
 def catalog():
     market = json.loads((ROOT / 'market_catalog.json').read_text())
     extra = json.loads((ROOT / 'market_extra.json').read_text())
@@ -232,6 +236,10 @@ def install_scheduler():
         raise RuntimeError('本机定时任务启动失败：' + (loaded.stderr.strip()[-500:] or 'launchctl 未能加载任务'))
 
 def schedule_offer(offer_id):
+    with SCHEDULE_LOCK:
+        return _schedule_offer(offer_id)
+
+def _schedule_offer(offer_id):
     offer = next((x for x in catalog() if x['id'] == offer_id), None)
     if offer and product_key(offer) in load_state()['suppressed_products']:
         return {'status':'hidden','message':'该产品已设为不再显示。'}
@@ -360,6 +368,58 @@ def dashboard():
                         'dismissed':False})
     return {'apps':list(installed.values()),'offers':entries,'time':now(),'market':meta}
 
+def batch_candidates(kind, data):
+    offers = data['offers']
+    if kind == 'once':
+        return [offer for offer in offers if offer['group'] == 'installed'
+                and offer['cycle'] == 'once' and offer['claim_mode'] != 'included'
+                and offer['record'].get('status') not in ('claimed', 'already_claimed')]
+    if kind == 'daily':
+        return [offer for offer in offers if offer['group'] == 'installed'
+                and offer['cycle'] == 'daily' and offer['auto_supported']
+                and offer['automation_status'] in ('absent', 'configured')]
+    return []
+
+def start_batch(kind):
+    candidates = batch_candidates(kind, dashboard())
+    if len(candidates) < 2:
+        return None
+    with BATCH_LOCK:
+        if any(not run['done'] for run in BATCH_RUNS.values()):
+            return None
+        for old_id in list(BATCH_RUNS)[:-10]:
+            del BATCH_RUNS[old_id]
+        run_id = secrets.token_urlsafe(12)
+        BATCH_RUNS[run_id] = {'kind': kind, 'done': False, 'items': [
+            {'id': offer['id'], 'name': offer['name'], 'status': 'queued', 'message': '',
+             'official_url': offer['official_url'], 'claim_mode': offer['claim_mode']}
+            for offer in candidates]}
+    threading.Thread(target=run_batch, args=(run_id,), daemon=True).start()
+    return run_id
+
+def run_batch(run_id):
+    with BATCH_LOCK:
+        kind = BATCH_RUNS[run_id]['kind']
+        items = [(item['id'], item['claim_mode']) for item in BATCH_RUNS[run_id]['items']]
+    try:
+        for index, (offer_id, claim_mode) in enumerate(items):
+            with BATCH_LOCK:
+                BATCH_RUNS[run_id]['items'][index]['status'] = 'running'
+            try:
+                if kind == 'once' and (claim_mode != 'desktop' or offer_id not in CLAIM_BUNDLES):
+                    result = {'status':'manual_required', 'message':'此活动需要在官方页面完成领取。'}
+                else:
+                    result = claim(offer_id) if kind == 'once' else schedule_offer(offer_id)
+            except Exception as exc:
+                result = {'status': 'error', 'message': f'处理失败：{type(exc).__name__}'}
+            with BATCH_LOCK:
+                item = BATCH_RUNS[run_id]['items'][index]
+                item['status'] = result['status']
+                item['message'] = result.get('message', '')
+    finally:
+        with BATCH_LOCK:
+            BATCH_RUNS[run_id]['done'] = True
+
 def render(token, flash=None):
     data = dashboard(); esc=html.escape
     def button(action, oid, label, css=''):
@@ -385,7 +445,7 @@ def render(token, flash=None):
         for o in data['offers']:
             if group=='more':
                 if o['group']=='installed' or o['product_type']!=product_type: continue
-            elif o['group'] != group: continue
+            elif o['group'] != group or (product_type and o['cycle'] != product_type): continue
             status=o['record'].get('status','')
             if group=='installed' and (status in ('deferred','needs_review','needs_accessibility') or (o['claim_mode']=='included' and status not in ('claimed','already_claimed'))): continue
             label={'claimed':'已领取','already_claimed':'已领取'}.get(status,'待领取' if group=='installed' else ('未安装' if o['group']=='other' else ''))
@@ -455,6 +515,21 @@ def render(token, flash=None):
             card_class='offer' if show_pill else 'offer no-pill'
             rows.append(f'<article class="{card_class}"><div class="offer-identity"><h3>{vendor}</h3><p>{name}</p>{claim_mode_label}</div><div class="amount"><small>活动额度 · {esc(cycle_label)}</small><strong>{amount}</strong></div>{pill}<div class="actions">{action}</div>{task_status}<details><summary>领取条件与适用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or ('' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
+    def installed_sections():
+        sections=[]
+        for cycle, title, description, batch_kind, batch_label in (
+            ('once','一次性活动','每项只领取一次，可单独操作或批量领取。','once','一键领取全部一次性额度'),
+            ('daily','每日活动','查看今日状态，按需开启 Agent 每日自动领取。','daily','一键开启全部每日自动领取'),
+            ('monthly','每月活动','按本期活动规则领取。',None,None),
+        ):
+            cards_html=cards('installed',cycle)
+            if not cards_html: continue
+            count=len(batch_candidates(batch_kind,data)) if batch_kind else 0
+            batch_html=(f'<div class="batch-bar"><span>{count} 项可批量处理，逐项显示结果。</span>'
+                        f'<button class="primary" type="button" data-batch="{batch_kind}">{batch_label}</button></div>') if count>1 else ''
+            sections.append(f'<section class="claim-group"><div class="section-heading"><h2>{title}</h2>'
+                            f'<p>{description}</p></div>{cards_html}{batch_html}</section>')
+        return ''.join(sections)
     def more_sections():
         sections=[]
         for type_id, title in PRODUCT_TYPES:
@@ -465,12 +540,13 @@ def render(token, flash=None):
     state=load_state()
     today=datetime.now(TZ).date().isoformat()
     confirmed=sum(1 for key,record in state['claims'].items() if key.endswith(':'+today) and record.get('status') in ('claimed','already_claimed'))
-    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">我的活动</a><a href="#other">发现更多</a></nav><main><h1>免费薅Token</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><img class="hero-banner" src="/banner.png" alt="Agent 自动领取免费 Token 和 Credits" width="2172" height="724"><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div><section class="installed-section" id="installed"><div class="section-heading"><h2>今日领取</h2><p>今日已领取记录、今日可领活动与自动代领任务；月度活动按本期状态标注</p></div>{cards('installed')}{claim_history()}</section><section class="discovery-section" id="other"><div class="section-heading"><h2>发现更多</h2><p>按产品用途浏览官方已核实的活动</p></div>{more_sections()}</section></main></div></div></html>'''
+    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">我的活动</a><a href="#other">发现更多</a></nav><main><h1>免费薅Token</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><img class="hero-banner" src="/banner.png" alt="Agent 自动领取免费 Token 和 Credits" width="2172" height="724"><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div><div class="installed-section" id="installed">{installed_sections()}{claim_history()}</div><section class="discovery-section" id="other"><div class="section-heading"><h2>发现更多</h2><p>按产品用途浏览官方已核实的活动</p></div>{more_sections()}</section></main></div></div></html>'''
     if flash:
         title={'scheduled':'每日代领任务已创建','reused_skill':'已复用现有 Skill','already_running':'本助手已有代领任务','disabled':'本助手代领任务已暂停'}.get(flash['status'],'操作未完成')
         detail='Skill 已写入本机；后台任务每小时第 5 分钟检查客户端。当天确认领取成功后不会重复操作。' if flash['status']=='scheduled' else flash['message']
         dialog=f'<div class="notice-overlay" role="alertdialog" aria-modal="true" aria-labelledby="notice-title"><div class="notice-dialog"><h2 id="notice-title">{esc(title)}</h2><p>{esc(detail)}</p><button class="primary" type="button" onclick="this.closest(\'.notice-overlay\').remove()">知道了</button></div></div><script>history.replaceState(null,"","/")</script>'
         body=body.replace('<div class="window">',dialog+'<div class="window">',1)
+    body=body.replace('</main>', BATCH_DIALOG + BATCH_SCRIPT.replace('__CSRF__', token) + '</main>', 1)
     if load_state()['suppressed_products'] or load_state()['dismissed']:
         body = body.replace('<h2 id="apps">', button('restore','all','恢复全部已隐藏产品','quiet') + '<h2 id="apps">')
     return body.encode()
@@ -484,11 +560,105 @@ CSS+=b'''.task-status{grid-column:1/-1;color:#087b68;background:#edf7f1;border-r
 CSS+=b'''h1,h2,.history-title{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-weight:700}'''
 CSS+=b'''.hero-banner{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;border-radius:18px;margin:0 0 28px;border:1px solid #dce9e2}@media(max-width:800px){.hero-banner{aspect-ratio:2/1;object-position:left center}}'''
 CSS+=b'''.claim-mode-badge{display:inline-block;margin-top:10px;padding:5px 9px;border-radius:7px;background:#eef5f1;color:#376a5c;font-size:12px;font-weight:600}.claim-mode-badge.auto{background:#dcefe5;color:#087b68}.claim-mode-badge.manual{background:#f2f2ef;color:#64716a}'''
+CSS+=b'''.claim-group{margin-top:42px}.claim-group .section-heading{margin-top:0}.batch-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 20px;margin-top:14px;border:1px solid #dce9df;border-radius:14px;background:#edf5ef;color:#527264;font-size:14px}.batch-dialog{border:0;border-radius:18px;padding:0;width:min(580px,calc(100% - 28px));box-shadow:0 24px 80px #1b453d3b;color:#172322}.batch-dialog::backdrop{background:#14282080}.batch-dialog-header,.batch-dialog-body{padding:22px 26px}.batch-dialog-header{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e9efeb}.batch-dialog-header h2{font-size:23px;margin:0}.batch-dialog-header button{border:0;background:#f0f4f1;color:#53695e;padding:3px 11px}.batch-summary{margin:0 0 12px;color:#386258}.batch-track{height:5px;background:#e7efea;border-radius:9px;overflow:hidden}.batch-fill{height:100%;width:0;background:#087b68;transition:width .3s}.batch-result{display:flex;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #edf0ed;font-size:14px}.batch-result small{display:block;color:#78867e;margin-top:4px}.batch-result a{display:inline-block;margin-top:5px;color:#087b68}.batch-state{white-space:nowrap;color:#68766e}.batch-state.done{color:#087b68;font-weight:700}.batch-state.attention{color:#9b6118}.batch-state.running::before{content:"";display:inline-block;width:9px;height:9px;margin-right:6px;border:2px solid #8ebfa8;border-top-color:#087b68;border-radius:50%;animation:batch-spin .7s linear infinite}@keyframes batch-spin{to{transform:rotate(360deg)}}@media(max-width:800px){.batch-bar{display:block}.batch-bar button{width:100%;margin-top:12px;white-space:normal}.batch-dialog-header,.batch-dialog-body{padding:18px}}@media(prefers-reduced-motion:reduce){.batch-state.running::before{animation:none}.batch-fill{transition:none}}'''
+
+BATCH_DIALOG='''<dialog class="batch-dialog" id="batch-dialog" aria-labelledby="batch-title"><div class="batch-dialog-header"><h2 id="batch-title">批量处理中</h2><button type="button" id="batch-close" aria-label="关闭">×</button></div><div class="batch-dialog-body"><p class="batch-summary" id="batch-summary" role="status" aria-live="polite"></p><div class="batch-track"><div class="batch-fill" id="batch-fill"></div></div><div id="batch-results"></div></div></dialog>'''
+BATCH_SCRIPT='''<script>
+(() => {
+  const csrf = '__CSRF__';
+  const dialog = document.getElementById('batch-dialog');
+  const title = document.getElementById('batch-title');
+  const summary = document.getElementById('batch-summary');
+  const fill = document.getElementById('batch-fill');
+  const results = document.getElementById('batch-results');
+  let currentRun = null;
+  let complete = false;
+  const success = new Set(['claimed','already_claimed','scheduled','reused_skill','already_running']);
+  const labels = {claimed:'✓ 已确认领取',already_claimed:'✓ 已领取过',scheduled:'✓ 已开启',reused_skill:'✓ 已开启',already_running:'✓ 已有任务',manual_required:'需手动领取',queued:'排队中',running:'处理中'};
+  function showRun(run) {
+    results.replaceChildren();
+    let finished = 0;
+    for (const item of run.items) {
+      const row = document.createElement('div');
+      row.className = 'batch-result';
+      const detail = document.createElement('div');
+      const name = document.createElement('strong');
+      name.textContent = item.name;
+      const note = document.createElement('small');
+      note.textContent = item.message || (item.status === 'running' ? '正在处理…' : '等待处理');
+      detail.append(name,note);
+      if (item.status === 'manual_required' && item.official_url) {
+        const link = document.createElement('a');
+        link.href = item.official_url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        link.textContent = '前往官方领取 ↗';
+        detail.append(link);
+      }
+      const state = document.createElement('span');
+      state.className = 'batch-state ' + (success.has(item.status) ? 'done' : item.status === 'running' ? 'running' : item.status === 'queued' ? '' : 'attention');
+      state.textContent = labels[item.status] || '需要你处理';
+      row.append(detail,state);
+      results.append(row);
+      if (item.status !== 'queued' && item.status !== 'running') finished++;
+    }
+    summary.textContent = run.done ? `已处理 ${finished}/${run.items.length} 项` : `处理中 ${finished}/${run.items.length} 项`;
+    fill.style.width = `${finished / run.items.length * 100}%`;
+    complete = run.done;
+  }
+  async function poll(runId) {
+    while (currentRun === runId) {
+      const response = await fetch(`/api/batch-status?run=${encodeURIComponent(runId)}&csrf=${encodeURIComponent(csrf)}`);
+      if (!response.ok) { summary.textContent = '状态读取失败，请刷新页面查看记录。'; return; }
+      const run = await response.json();
+      showRun(run);
+      if (run.done) return;
+      await new Promise(resolve => setTimeout(resolve, 700));
+    }
+  }
+  for (const button of document.querySelectorAll('[data-batch]')) {
+    button.addEventListener('click', async () => {
+      const kind = button.dataset.batch;
+      title.textContent = kind === 'once' ? '一次性额度 · 领取进度' : '每日自动领取 · 开启进度';
+      summary.textContent = '正在核对可处理活动…';
+      results.replaceChildren();
+      fill.style.width = '0%';
+      complete = false;
+      dialog.showModal();
+      try {
+        const response = await fetch('/api/batch', {method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams({kind,csrf})});
+        const data = await response.json();
+        if (!response.ok) { summary.textContent = data.error || '批量任务未启动'; return; }
+        currentRun = data.run;
+        await poll(currentRun);
+      } catch { summary.textContent = '本机连接失败，请刷新页面后重试。'; }
+    });
+  }
+  document.getElementById('batch-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => { if (complete) location.reload(); });
+})();
+</script>'''
 
 class Handler(BaseHTTPRequestHandler):
     token = secrets.token_urlsafe(24)
+    def send_json(self, value, status=200):
+        content = json.dumps(value, ensure_ascii=False).encode()
+        self.send_response(status)
+        self.send_header('Content-Type', 'application/json; charset=utf-8')
+        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Content-Length', str(len(content)))
+        self.end_headers()
+        self.wfile.write(content)
     def do_GET(self):
         parsed=urlsplit(self.path)
+        if parsed.path == '/api/batch-status':
+            query=parse_qs(parsed.query)
+            if query.get('csrf',[''])[0] != self.token: self.send_error(403); return
+            with BATCH_LOCK:
+                run=BATCH_RUNS.get(query.get('run',[''])[0])
+                snapshot=json.loads(json.dumps(run, ensure_ascii=False)) if run else None
+            self.send_json(snapshot if snapshot else {'error':'未找到本次任务'}, 200 if snapshot else 404)
+            return
         if parsed.path not in ('/','/style.css','/banner.png'): self.send_error(404); return
         flash=None
         if parsed.path=='/':
@@ -521,6 +691,10 @@ class Handler(BaseHTTPRequestHandler):
         form=parse_qs(self.rfile.read(length).decode())
         if form.get('csrf',[''])[0] != self.token: self.send_error(403); return
         oid=form.get('id',[''])[0]
+        if self.path=='/api/batch':
+            run_id=start_batch(form.get('kind',[''])[0])
+            self.send_json({'run':run_id} if run_id else {'error':'当前不足两项可批量处理，或已有批量任务正在运行'}, 200 if run_id else 409)
+            return
         if self.path=='/claim': claim(oid)
         elif self.path=='/schedule': result=schedule_offer(oid)
         elif self.path=='/unschedule': result=unschedule_offer(oid)

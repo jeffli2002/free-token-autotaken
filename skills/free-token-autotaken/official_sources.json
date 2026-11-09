@@ -1,4 +1,35 @@
 {
-  "description": "Populate this list with model and agent vendor official pages only.",
-  "sources": []
+  "description": "活动和权益信息直接取自模型厂商官方页面。AIHOT 仅作采集方法参考。",
+  "sources": [
+    {
+      "vendor": "Kimi 开放平台",
+      "url": "https://www.kimi.com/help/kimi-api/api-free-trial",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "kimi-api-new-user-15-cny"
+      ]
+    },
+    {
+      "vendor": "Cloudflare Workers AI",
+      "url": "https://developers.cloudflare.com/workers-ai/platform/pricing/",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "cloudflare-workers-ai-daily-10k"
+      ]
+    },
+    {
+      "vendor": "阿里云百炼",
+      "url": "https://help.aliyun.com/zh/model-studio/new-free-quota/",
+      "source_type": "official-docs",
+      "status": "active",
+      "checked_on": "2026-11-09",
+      "offer_ids": [
+        "aliyun-bailian-new-user-model-quota"
+      ]
+    }
+  ]
 }

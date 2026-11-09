@@ -11,6 +11,8 @@ This Skill package includes the local web dashboard and macOS connector. When th
 
 Before creating a schedule for any offer, inspect local Skills and recognizable LaunchAgent tasks for the same offer ID. Preserve an existing Skill and task; show the detected status in the activity card. If a Skill is present but its task cannot be verified, stop creation until the duplicate is resolved.
 
+The dashboard's pause action affects only the schedule entry managed by this package. It does not pause or delete WorkBuddy's own Skills or tasks, nor any task belonging to another app.
+
 ## Workflow
 
 1. Discover current offers across AI model API, coding agent, desktop agent, and related developer products. Confirm the offer on a vendor-controlled page. Record the source URL, checked date, eligibility, region, quota type, applicable products/models, expiry, and claim route. Treat aggregator-only mentions as unverified leads and exclude them from confirmed recommendations.

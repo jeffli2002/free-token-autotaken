@@ -36,6 +36,8 @@ Background claims are opt-in for each recurring offer through its “每日领�
 
 Before creating any claim Skill or schedule, the connector checks that offer's stable ID against local Skill files, saved schedules, and identifiable macOS LaunchAgents. It does not overwrite an existing Skill or restart a loaded schedule. When it finds a matching Skill but cannot confirm whether another task uses it, the dashboard shows that status and stops creation.
 
+“暂停本助手代领” disables only this project's schedule entry for that offer. It leaves the Skill file, the shared macOS LaunchAgent, and any WorkBuddy or other app's internal Skill untouched. An external task detected by the dashboard has no pause control here.
+
 Claim history is stored under `~/Library/Application Support/FreeTokenAgent/`. Nothing is uploaded by this project. Do not commit that directory, screenshots, app logs, browser profiles, account identifiers, cookies, API keys, or machine-specific binaries.
 
 To uninstall the hourly job:

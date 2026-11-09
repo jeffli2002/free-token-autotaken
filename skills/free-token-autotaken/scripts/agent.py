@@ -202,7 +202,7 @@ def schedule_offer(offer_id):
     state=load_state()
     existing_status,existing_skill=claim_automation_status(offer,state)
     if existing_status in ('running','external_running'):
-        message='已有 Skill 和定时任务在运行这个领取活动，未重复创建。' if existing_status=='running' else '检测到已有定时任务在运行这个领取活动，未重复创建。'
+        message='本助手已有本机 Skill 和定时任务在代领此活动，未重复创建。' if existing_status=='running' else '检测到其他定时任务在代领此活动，本助手未重复创建。'
         state['notices'][offer_id]=message; save_state(state)
         return {'status':'already_running','message':message}
     if existing_status=='skill_only':
@@ -232,12 +232,13 @@ def schedule_offer(offer_id):
 def unschedule_offer(offer_id):
     state = load_state()
     schedule = state['schedules'].get(offer_id)
-    if schedule:
-        schedule['enabled'] = False
-        schedule['disabled_at'] = now()
-        state['notices'][offer_id] = '已暂停该活动的本机定时领取。'
-        save_state(state)
-    return {'status':'disabled','message':state['notices'].get(offer_id,'定时领取未启用。')}
+    if not schedule or not schedule.get('enabled'):
+        return {'status':'not_managed','message':'本助手没有管理此活动的运行任务，未操作其他应用的 Skill 或定时任务。'}
+    schedule['enabled'] = False
+    schedule['disabled_at'] = now()
+    state['notices'][offer_id] = '已暂停本助手对该活动的本机代领任务；WorkBuddy 应用内部的 Skill 未被操作。'
+    save_state(state)
+    return {'status':'disabled','message':state['notices'][offer_id]}
 def bundle_info(path):
     try:
         with (path / 'Contents/Info.plist').open('rb') as f: p = plistlib.load(f)
@@ -355,11 +356,11 @@ def render(token, flash=None):
             if cycle in ('daily','monthly') and group=='installed' and o['claim_mode']!='included':
                 if o['auto_supported']:
                     if automation_status=='external_running':
-                        schedule_action='<button class="claimed" type="button" disabled>已有代领任务</button>'
+                        schedule_action='<button class="claimed" type="button" disabled>其他任务在代领</button>'
                     elif automation_status=='skill_only':
                         schedule_action='<button class="claimed" type="button" disabled>已有同活动 Skill</button>'
                     elif scheduled:
-                        schedule_action=button('unschedule',o['id'],'暂停每日代领' if cycle=='daily' else '暂停每月代领','primary')
+                        schedule_action=button('unschedule',o['id'],'暂停本助手代领','primary')
                     else:
                         text={'configured':'修复定时任务'}.get(automation_status,schedule_label)
                         schedule_action=button('schedule',o['id'],text,'primary')
@@ -377,7 +378,7 @@ def render(token, flash=None):
             if o['auto_supported'] and cycle in ('daily','monthly') and not scheduled:
                 messages.append('启用后会创建本机 Skill 和每日定时任务。')
             note = '<p class="note">' + esc(' '.join(x for x in messages if x)) + '</p>' if messages else ''
-            task_text={'running':'已有 Skill 正在代领这个领取活动','external_running':'已有定时任务在代领这个领取活动','skill_only':'已发现同活动 Skill；无法确认是否已有调度，未重复创建','configured':'已配置代领任务，后台调度需要修复'}.get(automation_status,'')
+            task_text={'running':'本助手的本机 Skill 与定时任务正在代领','external_running':'检测到其他定时任务；本助手不会重复创建或暂停它','skill_only':'已发现同活动 Skill；无法确认是否已有调度，未重复创建','configured':'本助手已配置代领任务，后台调度需要修复'}.get(automation_status,'')
             task_status=f'<div class="task-status">{task_text}</div>' if group=='installed' and task_text else ''
             vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
             requirements=esc(o['requirements']); scope=esc(o['scope'])
@@ -402,7 +403,7 @@ def render(token, flash=None):
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']
     body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">我的活动</a><a href="#other">发现更多</a><a href="#apps">本机软件</a></nav><main><h1>免费额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div><section class="installed-section" id="installed"><div class="section-heading"><h2>已安装活动</h2><p>今天可领取的活动与已启用的代领任务</p></div>{cards('installed')}{claim_history()}</section><section class="discovery-section" id="other"><div class="section-heading"><h2>发现更多</h2><p>按产品用途浏览官方已核实的活动</p></div>{more_sections()}</section><h2 id="apps">本机已识别软件</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
     if flash:
-        title={'scheduled':'每日代领任务已创建','reused_skill':'已复用现有 Skill','already_running':'已有 Skill 在代领','disabled':'每日代领任务已暂停'}.get(flash['status'],'操作未完成')
+        title={'scheduled':'每日代领任务已创建','reused_skill':'已复用现有 Skill','already_running':'本助手已有代领任务','disabled':'本助手代领任务已暂停'}.get(flash['status'],'操作未完成')
         detail='Skill 已写入本机；后台任务每小时第 5 分钟检查客户端。当天确认领取成功后不会重复操作。' if flash['status']=='scheduled' else flash['message']
         dialog=f'<div class="notice-overlay" role="alertdialog" aria-modal="true" aria-labelledby="notice-title"><div class="notice-dialog"><h2 id="notice-title">{esc(title)}</h2><p>{esc(detail)}</p><button class="primary" type="button" onclick="this.closest(\'.notice-overlay\').remove()">知道了</button></div></div><script>history.replaceState(null,"","/")</script>'
         body=body.replace('<div class="window">',dialog+'<div class="window">',1)
@@ -429,11 +430,11 @@ class Handler(BaseHTTPRequestHandler):
             oid=query.get('notice',[''])[0]
             status=query.get('result',[''])[0]
             message=state['notices'].get(oid)
-            if message and status in ('scheduled','reused_skill','already_running','existing_skill','disabled','not_ready','not_installed','unsupported','skill_conflict'):
+            if message and status in ('scheduled','reused_skill','already_running','existing_skill','disabled','not_managed','not_ready','not_installed','unsupported','skill_conflict'):
                 flash={'status':status,'message':message}
             if not flash:
                 oid=next((key for key,schedule in state['schedules'].items() if schedule.get('enabled') and not schedule.get('announcement_seen')),None)
-                if oid: flash={'status':'already_running','message':'已有 Skill 和定时任务在代领这个领取活动。'}
+                if oid: flash={'status':'already_running','message':'本助手的本机 Skill 与定时任务已在代领这个活动。'}
             if flash and flash['status'] in ('scheduled','reused_skill','already_running') and oid in state['schedules']:
                 state['schedules'][oid]['announcement_seen']=True
                 save_state(state)

@@ -7,6 +7,8 @@ description: Find current free AI model and agent quotas from vendor official so
 
 Use current vendor-controlled campaign pages, official product and developer docs, pricing pages, and announcements as evidence for offers. AIHOT may inform source discovery and collection methodology, but never import its activity listings as offer data. Search broadly across vendors before matching the local machine.
 
+This Skill package includes the local web dashboard and macOS connector. When the user asks to open the dashboard, launch the bundled `start.command`; do not ask them to download a separate app. The optional background claim service is enabled only when the user explicitly chooses it, by running bundled `scripts/install.command` and granting macOS Accessibility permission.
+
 ## Workflow
 
 1. Discover current offers across AI model API, coding agent, desktop agent, and related developer products. Confirm the offer on a vendor-controlled page. Record the source URL, checked date, eligibility, region, quota type, applicable products/models, expiry, and claim route. Treat aggregator-only mentions as unverified leads and exclude them from confirmed recommendations.

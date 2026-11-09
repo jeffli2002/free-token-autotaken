@@ -16,7 +16,8 @@ from pathlib import Path
 from urllib.parse import parse_qs
 from zoneinfo import ZoneInfo
 
-ROOT = Path(__file__).resolve().parent
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT = SCRIPT_DIR.parent
 DATA = Path.home() / 'Library/Application Support/FreeTokenAgent'
 STATE_FILE = DATA / 'state.json'
 def catalog():
@@ -75,7 +76,7 @@ def _claim_locked(offer_id, background=False):
     if (datetime.now(TZ).date() - date.fromisoformat(offer['verified_on'])).days > 14:
         return {'status':'needs_review','message':'活动规则超过 14 天未核实，已停止自动领取'}
     if not any(x in scan() for x in offer['bundle_ids']): return {'status':'not_installed','message':'本机未安装对应客户端'}
-    binary = ROOT / 'claim'
+    binary = SCRIPT_DIR / 'claim'
     if not binary.exists(): return {'status':'not_ready','message':'本机辅助功能程序尚未编译；运行 install.command'}
     try:
         result = subprocess.run([str(binary), offer_id] + ([] if background else ['--manual']), capture_output=True, text=True, timeout=25)

@@ -6,7 +6,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 META = ROOT / 'market_meta.json'
 ALLOWED = {'market_catalog.json', 'market_extra.json'}
 REQUIRED = {'id','name','vendor','amount','cycle','scope','requirements','official_url','verified_on','verification_state'}

@@ -15,7 +15,7 @@ import sys
 from datetime import datetime, date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs
+from urllib.parse import parse_qs, urlencode, urlsplit
 from zoneinfo import ZoneInfo
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -157,7 +157,7 @@ def schedule_offer(offer_id):
         state=load_state(); state['notices'][offer_id]=message; save_state(state)
         return {'status':'not_ready','message':message}
     state = load_state()
-    state['schedules'][offer_id] = {'enabled':True,'cycle':offer['cycle'],'created_at':now(),'skill_path':str(path)}
+    state['schedules'][offer_id] = {'enabled':True,'cycle':offer['cycle'],'created_at':now(),'skill_path':str(path),'announcement_seen':False}
     state['notices'][offer_id] = '已创建本机 Skill 和定时任务；电脑空闲且客户端运行时自动尝试，成功后本周期不再重复。'
     save_state(state)
     return {'status':'scheduled','message':state['notices'][offer_id]}
@@ -236,7 +236,7 @@ def dashboard():
                         'dismissed':False})
     return {'apps':list(installed.values()),'offers':entries,'time':now(),'market':meta}
 
-def render(token):
+def render(token, flash=None):
     data = dashboard(); esc=html.escape
     def button(action, oid, label, css=''):
         return f'<form method="post" action="/{action}"><input type="hidden" name="csrf" value="{token}"><input type="hidden" name="id" value="{esc(oid)}"><button class="{css}">{label}</button></form>'
@@ -283,7 +283,7 @@ def render(token):
                 manual_action=f'<a class="button primary" href="{esc(o["official_url"])}" target="_blank" rel="noopener">{manual_label}</a>'
             if cycle in ('daily','monthly') and group=='installed' and o['claim_mode']!='included':
                 if o['auto_supported']:
-                    schedule_action=button('unschedule' if scheduled else 'schedule',o['id'],('暂停每日代领' if cycle=='daily' else '暂停每月代领') if scheduled else schedule_label,'')
+                    schedule_action=button('unschedule' if scheduled else 'schedule',o['id'],('暂停每日代领' if cycle=='daily' else '暂停每月代领') if scheduled else schedule_label,'primary')
                 else:
                     schedule_action=''
                 action=manual_action+schedule_action
@@ -298,6 +298,7 @@ def render(token):
             if o['auto_supported'] and cycle in ('daily','monthly') and not scheduled:
                 messages.append('启用后会创建本机 Skill 和每日定时任务。')
             note = '<p class="note">' + esc(' '.join(x for x in messages if x)) + '</p>' if messages else ''
+            task_status=(f'<div class="task-status">每日代领已启用 · 本机 Skill 已创建 · 后台按时检查</div>' if scheduled and cycle=='daily' else '')
             vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
             requirements=esc(o['requirements']); scope=esc(o['scope'])
             verification=esc(o.get('verification_state', '官方待核实')); verified_on=esc(o['verified_on'])
@@ -306,7 +307,7 @@ def render(token):
             pill=f'<span class="pill">{label}</span>' if show_pill else ''
             card_class='offer' if show_pill else 'offer no-pill'
             cycle_label={'daily':'每日','monthly':'每月','once':'一次性'}.get(cycle,cycle)
-            rows.append(f'<article class="{card_class}"><div class="offer-identity"><h3>{vendor}</h3><p>{name}</p></div><div class="amount"><small>活动额度 · {esc(cycle_label)}</small><strong>{amount}</strong></div>{pill}<div class="actions">{action}</div><details><summary>领取条件与适用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
+            rows.append(f'<article class="{card_class}"><div class="offer-identity"><h3>{vendor}</h3><p>{name}</p></div><div class="amount"><small>活动额度 · {esc(cycle_label)}</small><strong>{amount}</strong></div>{pill}<div class="actions">{action}</div>{task_status}<details><summary>领取条件与适用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or ('' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
     def more_sections():
         sections=[]
@@ -320,6 +321,11 @@ def render(token):
     confirmed=sum(1 for key,record in state['claims'].items() if key.endswith(':'+today) and record.get('status') in ('claimed','already_claimed'))
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']
     body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">我的活动</a><a href="#other">发现更多</a><a href="#apps">本机软件</a></nav><main><h1>免费额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div><section class="installed-section" id="installed"><div class="section-heading"><h2>已安装活动</h2><p>今天可领取的活动与已启用的代领任务</p></div>{cards('installed')}{claim_history()}</section><section class="discovery-section" id="other"><div class="section-heading"><h2>发现更多</h2><p>按产品用途浏览官方已核实的活动</p></div>{more_sections()}</section><h2 id="apps">本机已识别软件</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
+    if flash:
+        title={'scheduled':'每日代领任务已创建','disabled':'每日代领任务已暂停'}.get(flash['status'],'操作未完成')
+        detail='Skill 已写入本机；后台任务每小时第 5 分钟检查客户端。当天确认领取成功后不会重复操作。' if flash['status']=='scheduled' else flash['message']
+        dialog=f'<div class="notice-overlay" role="alertdialog" aria-modal="true" aria-labelledby="notice-title"><div class="notice-dialog"><h2 id="notice-title">{esc(title)}</h2><p>{esc(detail)}</p><button class="primary" type="button" onclick="this.closest(\'.notice-overlay\').remove()">知道了</button></div></div><script>history.replaceState(null,"","/")</script>'
+        body=body.replace('<div class="window">',dialog+'<div class="window">',1)
     if load_state()['suppressed_products'] or load_state()['dismissed']:
         body = body.replace('<h2 id="apps">', button('restore','all','恢复全部已隐藏产品','quiet') + '<h2 id="apps">')
     return body.encode()
@@ -329,13 +335,30 @@ CSS+=b'''.history-title{font-size:28px;margin:34px 0 6px}.history-help{color:#68
 CSS+=b'''.history-item .claimed{grid-column:3}@media(max-width:800px){.history-item .claimed{grid-column:2}}'''
 CSS+=b'''.offer.no-pill{grid-template-columns:minmax(220px,1.2fr) minmax(180px,1fr) minmax(300px,auto)}.offer.no-pill .actions{grid-column:3;flex-wrap:nowrap;align-items:center;justify-content:flex-end}.offer-group{margin-top:28px}.offer-group .group-title{font-size:24px;margin:22px 0 12px}.dismiss{font-size:13px}.dismiss:hover{color:#a43b36}@media(max-width:800px){.offer.no-pill{grid-template-columns:1fr 1fr}.offer.no-pill .actions{grid-column:1/-1;flex-wrap:wrap;justify-content:flex-start}}'''
 CSS+=b'''.section-heading{display:flex;align-items:end;justify-content:space-between;gap:20px;border-bottom:1px solid #e5e9e5;padding-bottom:12px;margin:48px 0 18px}.section-heading h2{margin:0}.section-heading p{margin:0 0 4px;color:#6c7773;font-size:14px}.group-heading{display:flex;align-items:baseline;gap:12px}.group-heading span{color:#77837e;font-size:13px}.offer-group .group-title{margin:0}.group-intro{color:#77837e;font-size:14px;margin:5px 0 14px}.offer-identity h3{margin:0 0 5px}.offer-identity p{font-size:14px;line-height:1.5}.offer .amount{display:flex;flex-direction:column;gap:6px}.offer .amount small{font-size:12px;font-weight:500;color:#7c8883}.offer .amount strong{font-size:18px;line-height:1.4}.installed-section .offer{border-color:#cfe3d9}.history-title{font-family:Georgia,"Songti SC",serif;font-size:25px;margin:32px 0 12px}@media(max-width:800px){.section-heading{display:block;margin-top:36px}.section-heading p{margin-top:7px}.offer .amount{grid-column:1/-1}.offer.no-pill .actions{grid-column:1/-1}}'''
+CSS+=b'''.task-status{grid-column:1/-1;color:#087b68;background:#edf7f1;border-radius:8px;padding:9px 13px;font-size:13px}.notice-overlay{position:fixed;inset:0;background:rgba(18,38,33,.38);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}.notice-dialog{width:min(460px,100%);background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:28px}.notice-dialog h2{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-size:24px;margin:0 0 12px}.notice-dialog p{color:#53625c;line-height:1.7;margin:0 0 22px}.notice-dialog button{min-width:96px}'''
 
 class Handler(BaseHTTPRequestHandler):
     token = secrets.token_urlsafe(24)
     def do_GET(self):
-        if self.path not in ('/','/style.css'): self.send_error(404); return
-        content = CSS if self.path == '/style.css' else render(self.token)
-        self.send_response(200); self.send_header('Content-Type','text/css' if self.path=='/style.css' else 'text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(content))); self.end_headers(); self.wfile.write(content)
+        parsed=urlsplit(self.path)
+        if parsed.path not in ('/','/style.css'): self.send_error(404); return
+        flash=None
+        if parsed.path=='/':
+            state=load_state()
+            query=parse_qs(parsed.query)
+            oid=query.get('notice',[''])[0]
+            status=query.get('result',[''])[0]
+            message=state['notices'].get(oid)
+            if message and status in ('scheduled','disabled','not_ready','not_installed','unsupported'):
+                flash={'status':status,'message':message}
+            if not flash:
+                oid=next((key for key,schedule in state['schedules'].items() if schedule.get('enabled') and not schedule.get('announcement_seen')),None)
+                if oid: flash={'status':'scheduled','message':state['notices'].get(oid,'每日代领任务已创建。')}
+            if flash and flash['status']=='scheduled' and oid in state['schedules']:
+                state['schedules'][oid]['announcement_seen']=True
+                save_state(state)
+        content = CSS if parsed.path == '/style.css' else render(self.token,flash)
+        self.send_response(200); self.send_header('Content-Type','text/css' if parsed.path=='/style.css' else 'text/html; charset=utf-8'); self.send_header('Cache-Control','no-store'); self.send_header('Content-Length',str(len(content))); self.end_headers(); self.wfile.write(content)
     def do_POST(self):
         length=int(self.headers.get('Content-Length','0'))
         if length>4096: self.send_error(413); return
@@ -343,8 +366,8 @@ class Handler(BaseHTTPRequestHandler):
         if form.get('csrf',[''])[0] != self.token: self.send_error(403); return
         oid=form.get('id',[''])[0]
         if self.path=='/claim': claim(oid)
-        elif self.path=='/schedule': schedule_offer(oid)
-        elif self.path=='/unschedule': unschedule_offer(oid)
+        elif self.path=='/schedule': result=schedule_offer(oid)
+        elif self.path=='/unschedule': result=unschedule_offer(oid)
         elif self.path=='/dismiss':
             if oid not in {product_key(offer) for offer in catalog()}: self.send_error(400); return
             state=load_state()
@@ -356,7 +379,8 @@ class Handler(BaseHTTPRequestHandler):
         elif self.path=='/restore':
             state=load_state(); state['dismissed']=[]; state['suppressed_products']=[]; save_state(state)
         else: self.send_error(404); return
-        self.send_response(303); self.send_header('Location','/'); self.end_headers()
+        location='/?'+urlencode({'notice':oid,'result':result['status']}) if self.path in ('/schedule','/unschedule') else '/'
+        self.send_response(303); self.send_header('Location',location); self.end_headers()
 
 def main():
     p=argparse.ArgumentParser(); p.add_argument('command',choices=['scan','status','claim','run-due','serve']); p.add_argument('id',nargs='?'); p.add_argument('--port',type=int,default=8765); args=p.parse_args()

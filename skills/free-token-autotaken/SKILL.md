@@ -7,7 +7,7 @@ description: Find current free AI model and agent quotas from vendor official so
 
 Use current vendor-controlled campaign pages, official product and developer docs, pricing pages, and announcements as evidence for offers. AIHOT may inform source discovery and collection methodology, but never import its activity listings as offer data. Search broadly across vendors before matching the local machine.
 
-This Skill package includes the local web dashboard and macOS connector. When the user asks to open the dashboard, launch the bundled `start.command`; do not ask them to download a separate app. The optional background claim service is enabled only when the user explicitly chooses it, by running bundled `scripts/install.command` and granting macOS Accessibility permission.
+This Skill package includes the local web dashboard and macOS connector. When the user asks to open the dashboard, launch the bundled `start.command`; do not ask them to download a separate app. Offers are split by claim cycle: one-time claims use “立即领取”; recurring claims offer the current-period action and, when a verified client adapter exists, a separate opt-in schedule action. Choosing a recurring schedule creates a per-offer local Skill and uses the macOS LaunchAgent. It only operates when the target app is already open and the Mac has been idle for two minutes; unsupported offers keep scheduling disabled. Users can pause each schedule in the dashboard.
 
 ## Workflow
 

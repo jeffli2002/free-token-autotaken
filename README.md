@@ -24,13 +24,13 @@ The repository starts with an empty offer catalog because campaigns change and m
 
 1. Install the Skill from this repository.
 2. Run the bundled `start.command` to open the local dashboard.
-3. To enable hourly background checks, explicitly run `scripts/install.command` and grant Accessibility permission to the app or terminal that runs the helper.
+3. For a recurring offer, choose its “每日领取” or “每月领取” button to create that offer's local Skill and scheduled task. This is opt-in per offer. The task checks hourly and only attempts claims when the target app is already open and the Mac has been idle for two minutes.
 
 The dashboard binds to `127.0.0.1` only. Installed-app scanning and claim history stay on the Mac. The scanner reads app bundle IDs and the Kimi Code CLI path; it does not read passwords, cookies, API keys, or browser profiles.
 
 ## Background claims and privacy
 
-Background claims are opt-in through `scripts/install.command` inside the installed Skill folder. The helper only operates supported offers, only when the target app is already open, and only after the Mac has been idle for two minutes. It does not launch or activate apps. Accessibility automation can still change the target app's visible content while idle. Login challenges, changed layouts, or missing success feedback stop the attempt. Never enable a claim adapter unless you have reviewed the vendor's rules and the local UI flow.
+Background claims are opt-in for each recurring offer through its “每日领取” or “每月领取” button. The helper only operates supported offers, only when the target app is already open, and only after the Mac has been idle for two minutes. It does not launch or activate apps. Accessibility automation can still change the target app's visible content while idle. Login challenges, changed layouts, or missing success feedback stop the attempt. Unsupported activities cannot be scheduled. Pause a task using its schedule button in the dashboard.
 
 Claim history is stored under `~/Library/Application Support/FreeTokenAgent/`. Nothing is uploaded by this project. Do not commit that directory, screenshots, app logs, browser profiles, account identifiers, cookies, API keys, or machine-specific binaries.
 

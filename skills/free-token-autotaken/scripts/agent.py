@@ -7,6 +7,7 @@ import html
 import json
 import os
 import plistlib
+import re
 import secrets
 import shutil
 import subprocess
@@ -44,13 +45,117 @@ def period(offer):
     today = datetime.now(TZ).date()
     return today.isoformat() if offer['cycle'] == 'daily' else (today.strftime('%Y-%m') if offer['cycle'] == 'monthly' else 'once')
 def load_state():
-    try: return json.loads(STATE_FILE.read_text())
-    except FileNotFoundError: return {'claims': {}, 'dismissed': [], 'enabled': list(CLAIM_BUNDLES)}
+    try: state = json.loads(STATE_FILE.read_text())
+    except FileNotFoundError: state = {}
+    state.setdefault('claims', {})
+    state.setdefault('dismissed', [])
+    state.setdefault('schedules', {})
+    state.setdefault('notices', {})
+    return state
 def save_state(state):
     DATA.mkdir(parents=True, exist_ok=True)
     temp = STATE_FILE.with_suffix('.tmp')
     temp.write_text(json.dumps(state, ensure_ascii=False, indent=2))
     os.replace(temp, STATE_FILE)
+
+def auto_adapter_available(offer):
+    return (offer.get('cycle') in ('daily', 'monthly')
+            and offer.get('claim_mode') == 'desktop'
+            and offer.get('id') in CLAIM_BUNDLES
+            and bool(offer.get('bundle_ids')))
+
+def skill_path(offer_id):
+    slug = re.sub(r'[^a-z0-9-]+', '-', offer_id.lower()).strip('-')
+    return Path.home() / '.agents' / 'skills' / f'free-token-{slug}' / 'SKILL.md'
+
+def write_claim_skill(offer):
+    target = skill_path(offer['id'])
+    target.parent.mkdir(parents=True, exist_ok=True)
+    frequency = '每天' if offer['cycle'] == 'daily' else '每月'
+    skill_name = 'free-token-' + offer['id']
+    description = f"按厂商官方规则检查并领取{offer['vendor']}的免费额度。"
+    text = f'''---
+name: {json.dumps(skill_name, ensure_ascii=False)}
+description: {json.dumps(description, ensure_ascii=False)}
+---
+
+# {offer['name']}
+
+仅在用户已启用本机每日任务时运行。适用范围：{offer['scope']}
+
+领取规则：{offer['requirements']}
+
+厂商官方来源：{offer['official_url']}
+核验日期：{offer['verified_on']}
+
+## 执行要求
+
+- 本机连接器会按{frequency}计划调用适配器 `{offer['id']}`；只在客户端已运行且电脑空闲时尝试。
+- 仅点击已核验的领取入口；登录失效、验证码、实名审核、入口变化或结果不明确时立即停止并报告，不能绕过验证。
+- 只有客户端明确显示领取成功时才记录成功；同一领取周期不重复领取。
+- 若活动过期或官方规则发生变化，停止操作并要求重新核验。
+'''
+    target.write_text(text, encoding='utf-8')
+    return target
+
+def install_scheduler():
+    DATA.mkdir(parents=True, exist_ok=True)
+    binary = SCRIPT_DIR / 'claim'
+    if not binary.exists():
+        result = subprocess.run(['/usr/bin/swiftc', str(SCRIPT_DIR / 'claim.swift'), '-o', str(binary)],
+                                capture_output=True, text=True, timeout=120)
+        if result.returncode:
+            raise RuntimeError('无法准备本机领取连接器：' + (result.stderr.strip()[-500:] or 'Swift 编译失败'))
+        binary.chmod(0o700)
+    launch_agents = Path.home() / 'Library' / 'LaunchAgents'
+    launch_agents.mkdir(parents=True, exist_ok=True)
+    plist_path = launch_agents / 'org.free-token-autotaken.agent.plist'
+    payload = {
+        'Label': 'org.free-token-autotaken.agent',
+        'ProgramArguments': [sys.executable, str(SCRIPT_DIR / 'agent.py'), 'run-due'],
+        'StartCalendarInterval': {'Minute': 5},
+        'StandardOutPath': str(DATA / 'agent.log'),
+        'StandardErrorPath': str(DATA / 'agent-error.log'),
+    }
+    with plist_path.open('wb') as f: plistlib.dump(payload, f)
+    domain = f'gui/{os.getuid()}'
+    subprocess.run(['/bin/launchctl', 'bootout', f'{domain}/org.free-token-autotaken.agent'],
+                   capture_output=True, text=True, timeout=10)
+    loaded = subprocess.run(['/bin/launchctl', 'bootstrap', domain, str(plist_path)],
+                            capture_output=True, text=True, timeout=15)
+    if loaded.returncode:
+        raise RuntimeError('本机定时任务启动失败：' + (loaded.stderr.strip()[-500:] or 'launchctl 未能加载任务'))
+
+def schedule_offer(offer_id):
+    offer = next((x for x in catalog() if x['id'] == offer_id), None)
+    if not offer or not auto_adapter_available(offer):
+        return {'status':'unsupported','message':'该活动尚无经核验的客户端自动领取适配器；可先用当期领取按钮手动操作。'}
+    if not any(bundle_id in scan() for bundle_id in offer.get('bundle_ids', [])):
+        message='本机未检测到该活动对应的客户端，未创建定时任务。'
+        state=load_state(); state['notices'][offer_id]=message; save_state(state)
+        return {'status':'not_installed','message':message}
+    try:
+        path = write_claim_skill(offer)
+        install_scheduler()
+    except (OSError, subprocess.SubprocessError, RuntimeError) as exc:
+        message='定时领取未启用：' + str(exc)
+        state=load_state(); state['notices'][offer_id]=message; save_state(state)
+        return {'status':'not_ready','message':message}
+    state = load_state()
+    state['schedules'][offer_id] = {'enabled':True,'cycle':offer['cycle'],'created_at':now(),'skill_path':str(path)}
+    state['notices'][offer_id] = '已创建本机 Skill 和定时任务；电脑空闲且客户端运行时自动尝试，成功后本周期不再重复。'
+    save_state(state)
+    return {'status':'scheduled','message':state['notices'][offer_id]}
+
+def unschedule_offer(offer_id):
+    state = load_state()
+    schedule = state['schedules'].get(offer_id)
+    if schedule:
+        schedule['enabled'] = False
+        schedule['disabled_at'] = now()
+        state['notices'][offer_id] = '已暂停该活动的本机定时领取。'
+        save_state(state)
+    return {'status':'disabled','message':state['notices'].get(offer_id,'定时领取未启用。')}
 def bundle_info(path):
     try:
         with (path / 'Contents/Info.plist').open('rb') as f: p = plistlib.load(f)
@@ -100,7 +205,11 @@ def dashboard():
         on_device = any(x in installed for x in offer['bundle_ids'])
         group = 'installed' if on_device else ('other' if offer.get('requires_install') else 'web')
         record = state['claims'].get(offer['id'] + ':' + period(offer), {})
-        entries.append({**offer,'group':group,'record':record,'enabled':offer['id'] in state['enabled'],'dismissed':offer['id'] in state['dismissed']})
+        entries.append({**offer,'group':group,'record':record,
+                        'schedule':state['schedules'].get(offer['id'],{}),
+                        'notice':state['notices'].get(offer['id'],''),
+                        'auto_supported':auto_adapter_available(offer),
+                        'dismissed':offer['id'] in state['dismissed']})
     return {'apps':list(installed.values()),'offers':entries,'time':now(),'market':meta}
 
 def render(token):
@@ -113,14 +222,40 @@ def render(token):
             if o['group'] != group or o['dismissed']: continue
             status=o['record'].get('status','')
             label={'claimed':'已领取','already_claimed':'已领取','deferred':'已延后','needs_review':'需核对','needs_accessibility':'需授权'}.get(status,('待核对' if o['claim_mode']=='guide' and group=='installed' else '待领取') if group=='installed' else ('无需安装' if group=='web' else '未安装'))
-            action=(f'<span class="done">本周期已领取</span>' if status in ('claimed','already_claimed') else button('claim',o['id'],'立即领取','primary')) if o['claim_mode']=='desktop' and group=='installed' else f'<a class="button" href="{esc(o["download_url"] if group=="other" else o["official_url"])}" target="_blank" rel="noopener">查看官网</a>'
+            cycle=o.get('cycle','once')
+            manual_label=('当日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
+            if cycle in ('daily','monthly'):
+                schedule_label='每日领取' if cycle=='daily' else '每月领取'
+                scheduled=o.get('schedule',{}).get('enabled',False)
+            else:
+                schedule_label=''
+                scheduled=False
+            if group=='installed' and o['claim_mode']=='desktop' and o['id'] in CLAIM_BUNDLES:
+                manual_action=(f'<span class="done">本周期已领取</span>' if status in ('claimed','already_claimed') else button('claim',o['id'],manual_label,'primary'))
+            else:
+                manual_action=f'<a class="button primary" href="{esc(o["official_url"])}" target="_blank" rel="noopener">{manual_label}</a>'
+            if cycle in ('daily','monthly') and group=='installed':
+                if o['auto_supported']:
+                    schedule_action=button('unschedule' if scheduled else 'schedule',o['id'],('暂停' + schedule_label) if scheduled else schedule_label,'')
+                else:
+                    schedule_action=f'<button class="disabled" type="button" disabled title="当前活动尚无经核验的客户端自动领取流程">{schedule_label}（暂不可用）</button>'
+                action=manual_action+schedule_action
+            else:
+                action=manual_action
             if group!='installed': action += button('dismiss',o['id'],'暂不需要','quiet')
-            note = '<p class="note">' + esc(o['record'].get('message', '')) + '</p>' if status else ''
+            messages=[]
+            if o.get('notice'): messages.append(o['notice'])
+            if status: messages.append(o['record'].get('message',''))
+            if o.get('schedule',{}).get('enabled'): messages.append('已启用本机定时领取；电脑空闲且客户端运行时检查。')
+            if o.get('schedule',{}).get('disabled_at'): messages.append('本机定时领取已暂停。')
+            if o['auto_supported'] and cycle in ('daily','monthly') and not scheduled:
+                messages.append('启用定时领取后会创建本机 Skill 和任务；仅支持已核验的客户端流程。')
+            note = '<p class="note">' + esc(' '.join(x for x in messages if x)) + '</p>' if messages else ''
             vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
             requirements=esc(o['requirements']); scope=esc(o['scope'])
             verification=esc(o.get('verification_state', '官方待核实')); verified_on=esc(o['verified_on'])
             source_url=esc(o['source_url']); official_url=esc(o['official_url'])
-            rows.append(f'<article class="offer"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div><span class="pill">{label}</span><div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
+            rows.append(f'<article class="offer"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div><span class="pill">{label}</span><div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>领取周期：{esc(cycle)} · 来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
         return ''.join(rows) or '<p class="empty">暂无已核实活动。请将厂商官方页面核实后的项目加入市场目录。</p>'
     confirmed=sum(1 for o in data['offers'] if o['record'].get('status') in ('claimed','already_claimed'))
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']
@@ -129,7 +264,7 @@ def render(token):
         body = body.replace('<h2 id="apps">', button('restore','all','显示隐藏活动','quiet') + '<h2 id="apps">')
     return body.encode()
 
-CSS=b'''*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f8f7f3;color:#172322;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.window{max-width:1500px;margin:auto;background:#fcfbf8;min-height:100vh}header{height:76px;border-bottom:1px solid #e7e5e0;display:flex;align-items:center;gap:24px;padding:0 36px;font-size:22px}.dots{font-size:17px;letter-spacing:3px;color:#28b853}.dots:first-letter{color:#ed6056}header small{margin-left:auto;font-size:14px;color:#6c7773}.layout{display:grid;grid-template-columns:220px 1fr}nav{border-right:1px solid #e7e5e0;padding:40px 20px;display:flex;flex-direction:column;gap:10px}nav a{padding:13px 18px;text-decoration:none;color:#53605c;border-radius:13px}nav a:first-child,nav a:hover{background:#dfebe7;color:#096c60}main{padding:48px 56px;max-width:1250px}h1{font-family:Georgia,"Songti SC",serif;font-size:52px;margin:0 0 10px}h2{font-family:Georgia,"Songti SC",serif;font-size:36px;margin:50px 0 22px}.lede{font-size:18px;color:#6c7773;margin:0 0 34px}.progress{background:#e5f0ec;padding:20px 28px;border-radius:16px;margin-bottom:26px;font-size:18px}.progress b{font-size:26px;color:#087b68}.progress span{float:right;color:#648077;font-size:14px;padding-top:9px}.offer{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(150px,1fr) 100px 180px;align-items:center;gap:20px;border:1px solid #e3e2dd;border-radius:16px;padding:18px 24px;margin:12px 0;background:#fff}.offer h3{font-size:22px;margin:0 0 4px}.offer p{margin:0;color:#68736f}.amount{font-size:19px;font-weight:600}.pill{background:#e1f0e9;color:#0b7668;border-radius:30px;padding:8px 10px;text-align:center;font-size:14px}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.actions form{margin:0}.done{color:#087b68;font-size:14px}button,.button{border:1px solid #087b68;background:white;color:#087b68;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap}button.primary{background:#087b68;color:white}.quiet{border:0;color:#7f8a86}.offer details{grid-column:1/-1;border-top:1px solid #eee;padding-top:12px;color:#60706b}.offer details p{margin:8px 0}.offer a{color:#087b68}.apps,.foot{color:#68736f}.empty{padding:24px;color:#7b8580}@media(max-width:800px){header{padding:0 18px}.layout{display:block}nav{border:0;flex-direction:row;padding:12px;overflow:auto}main{padding:30px 18px}h1{font-size:36px}h2{font-size:29px}.progress span{float:none;display:block}.offer{grid-template-columns:1fr 1fr;gap:10px}.amount{grid-column:1}.pill{grid-column:2}.actions{grid-column:1/-1;justify-content:flex-start}}'''
+CSS=b'''*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f8f7f3;color:#172322;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.window{max-width:1500px;margin:auto;background:#fcfbf8;min-height:100vh}header{height:76px;border-bottom:1px solid #e7e5e0;display:flex;align-items:center;gap:24px;padding:0 36px;font-size:22px}.dots{font-size:17px;letter-spacing:3px;color:#28b853}.dots:first-letter{color:#ed6056}header small{margin-left:auto;font-size:14px;color:#6c7773}.layout{display:grid;grid-template-columns:220px 1fr}nav{border-right:1px solid #e7e5e0;padding:40px 20px;display:flex;flex-direction:column;gap:10px}nav a{padding:13px 18px;text-decoration:none;color:#53605c;border-radius:13px}nav a:first-child,nav a:hover{background:#dfebe7;color:#096c60}main{padding:48px 56px;max-width:1250px}h1{font-family:Georgia,"Songti SC",serif;font-size:52px;margin:0 0 10px}h2{font-family:Georgia,"Songti SC",serif;font-size:36px;margin:50px 0 22px}.lede{font-size:18px;color:#6c7773;margin:0 0 34px}.progress{background:#e5f0ec;padding:20px 28px;border-radius:16px;margin-bottom:26px;font-size:18px}.progress b{font-size:26px;color:#087b68}.progress span{float:right;color:#648077;font-size:14px;padding-top:9px}.offer{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(150px,1fr) 100px minmax(210px,auto);align-items:center;gap:20px;border:1px solid #e3e2dd;border-radius:16px;padding:18px 24px;margin:12px 0;background:#fff}.offer h3{font-size:22px;margin:0 0 4px}.offer p{margin:0;color:#68736f}.amount{font-size:19px;font-weight:600}.pill{background:#e1f0e9;color:#0b7668;border-radius:30px;padding:8px 10px;text-align:center;font-size:14px}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.actions form{margin:0}.done{color:#087b68;font-size:14px}button,.button{border:1px solid #087b68;background:white;color:#087b68;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap}button.primary,.button.primary{background:#087b68;color:white}.disabled{border-color:#d9dedb;color:#9aa39f;background:#f4f5f3;cursor:not-allowed}.quiet{border:0;color:#7f8a86}.note{margin-top:10px!important;color:#59766f!important}.offer details{grid-column:1/-1;border-top:1px solid #eee;padding-top:12px;color:#60706b}.offer details p{margin:8px 0}.offer a{color:#087b68}.apps,.foot{color:#68736f}.empty{padding:24px;color:#7b8580}@media(max-width:800px){header{padding:0 18px}.layout{display:block}nav{border:0;flex-direction:row;padding:12px;overflow:auto}main{padding:30px 18px}h1{font-size:36px}h2{font-size:29px}.progress span{float:none;display:block}.offer{grid-template-columns:1fr 1fr;gap:10px}.amount{grid-column:1}.pill{grid-column:2}.actions{grid-column:1/-1;justify-content:flex-start}}'''
 
 class Handler(BaseHTTPRequestHandler):
     token = secrets.token_urlsafe(24)
@@ -146,6 +281,8 @@ class Handler(BaseHTTPRequestHandler):
         if self.path=='/claim': claim(oid)
         elif self.path=='/run':
             for target in CLAIM_BUNDLES: claim(target)
+        elif self.path=='/schedule': schedule_offer(oid)
+        elif self.path=='/unschedule': unschedule_offer(oid)
         elif self.path=='/dismiss':
             state=load_state(); state['dismissed']=list(set(state['dismissed'])|{oid}); save_state(state)
         elif self.path=='/restore':
@@ -159,7 +296,20 @@ def main():
     elif args.command=='status': print(json.dumps(dashboard(),ensure_ascii=False,indent=2))
     elif args.command=='claim': print(json.dumps(claim(args.id),ensure_ascii=False))
     elif args.command=='run-due':
-        for oid in load_state()['enabled']: print(oid,json.dumps(claim(oid,True),ensure_ascii=False))
+        state=load_state()
+        available={x['id']:x for x in catalog()}
+        due=[]
+        for oid,schedule in state['schedules'].items():
+            if not schedule.get('enabled'): continue
+            offer=available.get(oid)
+            if not offer or not auto_adapter_available(offer):
+                schedule['enabled']=False
+                schedule['disabled_at']=now()
+                state['notices'][oid]='活动已过期、核验失效或自动领取适配器不可用，已暂停定时领取。'
+                continue
+            due.append(oid)
+        save_state(state)
+        for oid in due: print(oid,json.dumps(claim(oid,True),ensure_ascii=False))
     elif args.command=='serve':
         with ThreadingHTTPServer(('127.0.0.1',args.port),Handler) as server: server.serve_forever()
 if __name__=='__main__': main()

@@ -2,6 +2,12 @@
 
 A local macOS assistant that scans installed AI apps, matches them with free quota offers, and can help claim selected offers through an app's visible interface.
 
+This repository also contains an installable Agent Skill at `skills/free-token-autotaken/`. The Skill performs official-source research and can use the user's selected workspace context to produce three groups: installed and usable, recommended to install with a short context-based reason, and other not installed. It does not install software or upload local files.
+
+Install the Skill in Codex with the built-in GitHub skill installer using this repository and path `skills/free-token-autotaken`.
+
+After installation, invoke it with `$free-token-autotaken` or ask Codex to find current free AI credits.
+
 ## Data sources
 
 Activity data must come directly from model and agent vendors: official campaign pages, product documentation, pricing pages, developer docs, and official announcements. **AIHOT is a methodology reference only. This project does not import activity data from AIHOT.** New offers belong in `market_catalog.json` or `market_extra.json` only after a person verifies the vendor's official page, eligibility, quota type, scope, expiry, and claim route. `market_ingest.py` rejects non-HTTPS and AIHOT URLs and requires `verification_state` to be `厂商官方已核实`.

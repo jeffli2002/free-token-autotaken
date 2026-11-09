@@ -10,8 +10,10 @@ import plistlib
 import re
 import secrets
 import shutil
+import sqlite3
 import subprocess
 import sys
+import tomllib
 from datetime import datetime, date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -89,10 +91,19 @@ def scheduler_loaded(label='org.free-token-autotaken.agent'):
     except (OSError,subprocess.SubprocessError):
         return False
 
+def matches_activity(text, offer):
+    haystack=text.casefold()
+    if offer['id'].casefold() in haystack or offer['name'].casefold() in haystack:
+        return True
+    terms=offer.get('duplicate_terms',[])
+    return bool(terms) and all(term.casefold() in haystack for term in terms)
+
 def existing_claim_skill(offer):
     canonical=skill_path(offer['id'])
     candidates=[canonical]
-    for root in (Path.home()/'.agents/skills',Path.home()/'.codex/skills',Path.home()/'.codebuddy/skills'):
+    for root in (Path.home()/'.agents/skills',Path.home()/'.codex/skills',Path.home()/'.codebuddy/skills',
+                 Path.home()/'.workbuddy/skills',Path.home()/'.cursor/skills',Path.home()/'.cursor/skills-cursor',
+                 Path.home()/'.kimi-code/skills',Path.home()/'.deepseek/skills'):
         if root.exists(): candidates.extend(root.glob('*/SKILL.md'))
     seen=set()
     for path in candidates:
@@ -100,11 +111,40 @@ def existing_claim_skill(offer):
         seen.add(path)
         try: content=path.read_text(encoding='utf-8')[:65536]
         except OSError: continue
-        if f'free-token-offer-id: {offer["id"]}' in content or f'`{offer["id"]}`' in content or f'# {offer["name"]}' in content:
+        if matches_activity(content,offer):
             return path
     return None
 
+def cross_agent_task(offer):
+    database=Path.home()/'.workbuddy/workbuddy.db'
+    if database.is_file():
+        try:
+            with sqlite3.connect(f'file:{database}?mode=ro',uri=True,timeout=1) as db:
+                rows=db.execute("SELECT name,prompt,skills_json FROM automations WHERE deleted_at IS NULL AND upper(status) IN ('ACTIVE','ENABLED') AND schedule_type='recurring'")
+                for name,prompt,skills in rows:
+                    if matches_activity(' '.join((name or '',prompt or '',skills or '')),offer):
+                        return {'agent':'WorkBuddy','name':name,'source':'workbuddy-automation'}
+        except (OSError,sqlite3.Error): pass
+    codex_automations=Path.home()/'.codex/automations'
+    if codex_automations.exists():
+        for path in codex_automations.glob('*/automation.toml'):
+            try: data=tomllib.loads(path.read_text(encoding='utf-8'))
+            except (OSError,ValueError): continue
+            if str(data.get('status','')).upper() not in ('ACTIVE','ENABLED'): continue
+            if matches_activity(' '.join(str(data.get(key,'')) for key in ('title','name','prompt')),offer):
+                return {'agent':'Codex','name':str(data.get('title') or data.get('name') or path.parent.name),'source':'codex-automation'}
+    try:
+        cron=subprocess.run(['/usr/bin/crontab','-l'],capture_output=True,text=True,timeout=5)
+        if cron.returncode==0:
+            for line in cron.stdout.splitlines():
+                if line.strip() and not line.lstrip().startswith('#') and matches_activity(line,offer):
+                    return {'agent':'macOS','name':'crontab 定时任务','source':'cron'}
+    except (OSError,subprocess.SubprocessError): pass
+    return None
+
 def external_claim_task(offer):
+    task=cross_agent_task(offer)
+    if task: return task
     root=Path.home()/'Library/LaunchAgents'
     if not root.exists(): return None
     for path in root.glob('*.plist'):
@@ -114,15 +154,16 @@ def external_claim_task(offer):
         label=item.get('Label','')
         if label=='org.free-token-autotaken.agent': continue
         args=' '.join(map(str,item.get('ProgramArguments',[])))
-        if offer['id'] in label or offer['id'] in args or str(skill_path(offer['id'])) in args:
-            if scheduler_loaded(label): return label
+        if matches_activity(label+' '+args,offer) or str(skill_path(offer['id'])) in args:
+            if scheduler_loaded(label): return {'agent':'macOS','name':label,'source':'launch-agent'}
     return None
 
 def claim_automation_status(offer, state):
     schedule=state['schedules'].get(offer['id'],{})
     skill=existing_claim_skill(offer)
+    task=external_claim_task(offer)
+    if task: return 'external_running',task
     if schedule.get('enabled') and skill and scheduler_loaded(): return 'running',skill
-    if external_claim_task(offer): return 'external_running',skill
     if schedule.get('enabled'): return 'configured',skill
     if skill: return 'skill_only',skill
     return 'absent',None
@@ -202,7 +243,7 @@ def schedule_offer(offer_id):
     state=load_state()
     existing_status,existing_skill=claim_automation_status(offer,state)
     if existing_status in ('running','external_running'):
-        message='本助手已有本机 Skill 和定时任务在代领此活动，未重复创建。' if existing_status=='running' else '检测到其他定时任务在代领此活动，本助手未重复创建。'
+        message='本助手已有本机 Skill 和定时任务在代领此活动，未重复创建。' if existing_status=='running' else f'检测到 {existing_skill["agent"]} 已启用“{existing_skill["name"]}”，本助手未重复创建。'
         state['notices'][offer_id]=message; save_state(state)
         return {'status':'already_running','message':message}
     if existing_status=='skill_only':
@@ -286,6 +327,17 @@ def dashboard():
     market = catalog()
     meta = json.loads((ROOT / 'market_meta.json').read_text())
     installed = scan(); state = load_state(); entries=[]
+    changed=False
+    for offer in market:
+        schedule=state['schedules'].get(offer['id'],{})
+        if schedule.get('enabled'):
+            duplicate=external_claim_task(offer)
+            if duplicate:
+                schedule['enabled']=False
+                schedule['disabled_at']=now()
+                state['notices'][offer['id']]=f'发现 {duplicate["agent"]} 已启用“{duplicate["name"]}”；本助手的重复代领任务已暂停。'
+                changed=True
+    if changed: save_state(state)
     # This generic WorkBuddy activity is shown only when this device has a
     # concrete prior client success or an explicitly created daily schedule.
     if not any(key.startswith('workbuddy-daily:') for key in state['claims']) and 'workbuddy-daily' not in state['schedules']:
@@ -297,10 +349,11 @@ def dashboard():
         on_device = any(x in installed for x in offer['bundle_ids'])
         group = 'installed' if on_device else ('other' if offer.get('requires_install') else 'web')
         record = state['claims'].get(offer['id'] + ':' + period(offer), {})
-        auto_status,_ = claim_automation_status(offer,state) if on_device and auto_adapter_available(offer) else ('absent',None)
+        auto_status,auto_detail = claim_automation_status(offer,state) if on_device and auto_adapter_available(offer) else ('absent',None)
         entries.append({**offer,'group':group,'record':record,
                         'schedule':state['schedules'].get(offer['id'],{}),
                         'automation_status':auto_status,
+                        'automation_task':auto_detail if isinstance(auto_detail,dict) else None,
                         'notice':state['notices'].get(offer['id'],''),
                         'auto_supported':auto_adapter_available(offer),
                         'dismissed':False})
@@ -375,10 +428,13 @@ def render(token, flash=None):
             if status: messages.append(o['record'].get('message',''))
             if o.get('schedule',{}).get('enabled'): messages.append('已启用本机定时领取；电脑空闲且客户端运行时检查。')
             if o.get('schedule',{}).get('disabled_at'): messages.append('本机定时领取已暂停。')
-            if o['auto_supported'] and cycle in ('daily','monthly') and not scheduled:
-                messages.append('启用后会创建本机 Skill 和每日定时任务。')
+            if o['auto_supported'] and cycle in ('daily','monthly') and automation_status in ('absent','configured'):
+                messages.append(f'启用后会创建本机 Skill 和{cycle_label}定时任务。')
             note = '<p class="note">' + esc(' '.join(x for x in messages if x)) + '</p>' if messages else ''
-            task_text={'running':'本助手的本机 Skill 与定时任务正在代领','external_running':'检测到其他定时任务；本助手不会重复创建或暂停它','skill_only':'已发现同活动 Skill；无法确认是否已有调度，未重复创建','configured':'本助手已配置代领任务，后台调度需要修复'}.get(automation_status,'')
+            task_text={'running':'本助手的本机 Skill 与定时任务正在代领','skill_only':'已发现同活动 Skill；无法确认是否已有调度，未重复创建','configured':'本助手已配置代领任务，后台调度需要修复'}.get(automation_status,'')
+            if automation_status=='external_running' and o.get('automation_task'):
+                task=o['automation_task']
+                task_text=f'{task["agent"]} 已启用“{task["name"]}”；本助手不会重复创建或暂停它'
             task_status=f'<div class="task-status">{task_text}</div>' if group=='installed' and task_text else ''
             vendor=esc(o['vendor']); name=esc(o['name']); amount=esc(o['amount'])
             requirements=esc(o['requirements']); scope=esc(o['scope'])
@@ -479,6 +535,12 @@ def main():
                 schedule['enabled']=False
                 schedule['disabled_at']=now()
                 state['notices'][oid]='活动已过期、核验失效或自动领取适配器不可用，已暂停定时领取。'
+                continue
+            duplicate=external_claim_task(offer)
+            if duplicate:
+                schedule['enabled']=False
+                schedule['disabled_at']=now()
+                state['notices'][oid]=f'发现 {duplicate["agent"]} 已启用“{duplicate["name"]}”；本助手的重复代领任务已暂停。'
                 continue
             due.append(oid)
         save_state(state)

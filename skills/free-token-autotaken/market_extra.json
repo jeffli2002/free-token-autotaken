@@ -723,6 +723,11 @@
     "verification_valid_days": 14,
     "source_note": "WorkBuddy 官方系统设置文档确认 Buddy 加油站参与当前活动可获取积分；每日领取和积分数量由登录后的客户端活动页面确认。",
     "product_id": "workbuddy",
-    "product_type": "agent"
+    "product_type": "agent",
+    "duplicate_terms": [
+      "WorkBuddy",
+      "加油站",
+      "签到"
+    ]
   }
 ]

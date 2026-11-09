@@ -23,6 +23,8 @@ def validate(items):
             raise ValueError(f"{item['id']} 的 product_id 必须是稳定的产品标识")
         if item['product_type'] not in PRODUCT_TYPES:
             raise ValueError(f"{item['id']} 的 product_type 不在支持的分类中")
+        if item.get('claim_mode')=='desktop' and (not isinstance(item.get('duplicate_terms'),list) or not all(isinstance(term,str) and term.strip() for term in item['duplicate_terms'])):
+            raise ValueError(f"{item['id']} 自动代领活动必须提供 duplicate_terms，供跨 Agent 去重扫描使用")
         url=urlparse(item['official_url'])
         if url.scheme!='https' or not url.hostname or url.hostname=='aihot.news' or url.hostname.endswith('.aihot.news'):
             raise ValueError(f"{item['id']} 必须引用厂商 HTTPS 官方页面，不能引用 AIHOT")

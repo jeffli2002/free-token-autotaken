@@ -9,6 +9,8 @@ Use current vendor-controlled campaign pages, official product and developer doc
 
 This Skill package includes the local web dashboard and macOS connector. When the user asks to open the dashboard, launch the bundled `start.command`; do not ask them to download a separate app. Offers are split by claim cycle: one-time claims use “立即领取”; recurring claims offer the current-period action and, when a verified client adapter exists, a separate opt-in schedule action. For WorkBuddy Buddy 加油站, show the daily task card on this device when a local successful client claim or an enabled schedule exists; the adapter only claims when the signed-in client displays “每日可领” and “立即领取”, and the actual points vary by campaign. Choosing a recurring schedule creates a per-offer local Skill and uses the macOS LaunchAgent. It only operates when the target app is already open and the Mac has been idle for two minutes; unsupported offers keep scheduling disabled. Users can pause each schedule in the dashboard.
 
+Before creating a schedule for any offer, inspect local Skills and recognizable LaunchAgent tasks for the same offer ID. Preserve an existing Skill and task; show the detected status in the activity card. If a Skill is present but its task cannot be verified, stop creation until the duplicate is resolved.
+
 ## Workflow
 
 1. Discover current offers across AI model API, coding agent, desktop agent, and related developer products. Confirm the offer on a vendor-controlled page. Record the source URL, checked date, eligibility, region, quota type, applicable products/models, expiry, and claim route. Treat aggregator-only mentions as unverified leads and exclude them from confirmed recommendations.

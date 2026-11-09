@@ -34,6 +34,8 @@ In **更多**, offers are grouped by product type. **× 不再显示** saves the
 
 Background claims are opt-in for each recurring offer through its “每日领取” or “每月领取” button. The helper only operates supported offers, only when the target app is already open, and only after the Mac has been idle for two minutes. It does not launch or activate apps. Accessibility automation can still change the target app's visible content while idle. Login challenges, changed layouts, or missing success feedback stop the attempt. Unsupported activities cannot be scheduled. Pause a task using its schedule button in the dashboard.
 
+Before creating any claim Skill or schedule, the connector checks that offer's stable ID against local Skill files, saved schedules, and identifiable macOS LaunchAgents. It does not overwrite an existing Skill or restart a loaded schedule. When it finds a matching Skill but cannot confirm whether another task uses it, the dashboard shows that status and stops creation.
+
 Claim history is stored under `~/Library/Application Support/FreeTokenAgent/`. Nothing is uploaded by this project. Do not commit that directory, screenshots, app logs, browser profiles, account identifiers, cookies, API keys, or machine-specific binaries.
 
 To uninstall the hourly job:

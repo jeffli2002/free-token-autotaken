@@ -7,5 +7,8 @@
   "verified_candidates_displayed": 32,
   "hidden_unverified_or_expired_count": 13,
   "supplemental_app_checks": 2,
-  "method": "Every displayed item directly verified against a vendor-controlled official page on 2026-11-09. AIHOT is methodology reference only. Offers expire from the dashboard after their stated active_until date or when verification_valid_days elapse."
+  "method": "Every displayed item directly verified against a vendor-controlled official page on 2026-11-09. AIHOT is methodology reference only. Offers expire from the dashboard after their stated active_until date or when verification_valid_days elapse.",
+  "all_displayed_links_checked_at": "2026-11-09T12:50:27+08:00",
+  "unique_displayed_links_checked": 53,
+  "link_check_result": "53/53 HTTPS targets returned HTTP 200 after redirects"
 }

@@ -226,16 +226,18 @@ def render(token):
             bundle = CLAIM_BUNDLES.get(offer_id)
             offer = next((item for item in data['offers'] if item['id'] == offer_id), None)
             name = offer['name'] if offer else KNOWN.get(bundle, offer_id)
-            amount = record.get('claimed_amount') or record.get('amount') or '领取数量未记录'
+            amount = record.get('claimed_amount') or record.get('amount')
             recorded_at = record.get('time', claim_period)
-            rows.append(f'<article class="history-item"><div><strong>{esc(name)}</strong><p>{esc(claim_period)} · 本机客户端成功记录</p></div><div class="history-amount">{esc(str(amount))}</div>{claimed_button()}<small>记录时间：{esc(recorded_at)}</small></article>')
-        return '<h2 class="history-title">已领取记录</h2><p class="history-help">显示本机保存的客户端成功反馈；领取数量以客户端明确返回的数值为准。</p>' + ''.join(rows) if rows else ''
+            amount_html=f'<div class="history-amount">{esc(str(amount))}</div>' if amount else ''
+            rows.append(f'<article class="history-item"><div><strong>{esc(name)}</strong><p>{esc(claim_period)} · 本机客户端成功记录</p></div>{amount_html}{claimed_button()}<small>记录时间：{esc(recorded_at)}</small></article>')
+        return '<h2 class="history-title">已领取记录</h2>' + ''.join(rows) if rows else ''
     def cards(group):
         rows=[]
         for o in data['offers']:
             if o['group'] != group or o['dismissed']: continue
             status=o['record'].get('status','')
-            label={'claimed':'已领取','already_claimed':'已领取','deferred':'已延后','needs_review':'需核对','needs_accessibility':'需授权'}.get(status,('额度待核对' if o['claim_mode']=='included' else '待领取') if group=='installed' else ('无需安装' if group=='web' else '未安装'))
+            if group=='installed' and (status in ('deferred','needs_review','needs_accessibility') or (o['claim_mode']=='included' and status not in ('claimed','already_claimed'))): continue
+            label={'claimed':'已领取','already_claimed':'已领取'}.get(status,'待领取' if group=='installed' else ('无需安装' if group=='web' else '未安装'))
             cycle=o.get('cycle','once')
             manual_label=('当日领取' if cycle=='daily' else ('本期领取' if cycle=='monthly' else '立即领取')) if group=='installed' else '立刻领取'
             if cycle in ('daily','monthly'):
@@ -262,12 +264,6 @@ def render(token):
                 action=manual_action
             if group!='installed': action += button('dismiss',o['id'],'暂不需要','quiet')
             messages=[]
-            if o['claim_mode']=='included' and group=='installed':
-                messages.append('这是套餐包含的月度额度，请在客户端核对本月余额。')
-                today=datetime.now(TZ).date().isoformat()
-                claims=load_state()['claims']
-                if any(bundle in o['bundle_ids'] and claims.get(oid+':'+today,{}).get('status') in ('claimed','already_claimed') for oid,bundle in CLAIM_BUNDLES.items()):
-                    messages.append(f'本机记录 {o["vendor"]} 今日领取状态为成功；该记录不代表本月基础积分余额。')
             if o.get('notice'): messages.append(o['notice'])
             if status: messages.append(o['record'].get('message',''))
             if o.get('schedule',{}).get('enabled'): messages.append('已启用本机定时领取；电脑空闲且客户端运行时检查。')
@@ -280,18 +276,19 @@ def render(token):
             verification=esc(o.get('verification_state', '官方待核实')); verified_on=esc(o['verified_on'])
             source_url=esc(o['source_url']); official_url=esc(o['official_url'])
             rows.append(f'<article class="offer"><div><h3>{vendor}</h3><p>{name}</p></div><div class="amount">{amount}</div><span class="pill">{label}</span><div class="actions">{action}</div><details><summary>条件与使用范围</summary><p>{requirements}</p><p>适用范围：{scope}</p><p>领取周期：{esc(cycle)} · 来源状态：{verification} · 标注日期：{verified_on}</p><a href="{source_url}" target="_blank" rel="noopener">活动来源 ↗</a> · <a href="{official_url}" target="_blank" rel="noopener">厂商页面 ↗</a>{note}</details></article>')
-        return ''.join(rows) or '<p class="empty">暂无已核实活动。请将厂商官方页面核实后的项目加入市场目录。</p>'
+        return ''.join(rows) or ('<p class="empty">当前没有已确认的可领取活动。</p>' if group=='installed' else '<p class="empty">暂无已核实活动。</p>')
     state=load_state()
     today=datetime.now(TZ).date().isoformat()
     confirmed=sum(1 for key,record in state['claims'].items() if key.endswith(':'+today) and record.get('status') in ('claimed','already_claimed'))
     unknown=[a['name'] for a in data['apps'] if a['bundle_id'] in KNOWN or a['bundle_id']=='cli.kimi-code']
-    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">概览</a><a href="#other">更多活动</a><a href="#apps">本机软件</a></nav><main><h1 id="installed">已安装的活动与额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日标记成功的领取记录 <b>{confirmed}</b> 项 <span>具体额度请在对应客户端核对</span></div>{claim_history()}{cards('installed')}<h2 id="other">更多活动</h2><h3 class="group-title">未安装客户端活动</h3>{cards('other')}<h3 class="group-title">无需安装</h3>{cards('web')}<h2 id="apps">本机识别</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
+    body=f'''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Free Token Autotaken</title><link rel="stylesheet" href="/style.css"><div class="window"><header><span class="dots">● ● ●</span><strong>Free Token Autotaken</strong><small>本机运行 · 数据仅存本地</small></header><div class="layout"><nav><a href="#installed">概览</a><a href="#other">更多活动</a><a href="#apps">本机软件</a></nav><main><h1 id="installed">已安装的活动与额度</h1><p class="lede">先从模型和 Agent 厂商官方页面收集活动，再匹配本机软件。当前目录 {len(data['offers'])} 项；更新时间 {esc(data['market'].get('official_sources_updated_at', '尚未更新'))}。</p><div class="progress">本机今日已确认领取 <b>{confirmed}</b> 项</div>{claim_history()}{cards('installed')}<h2 id="other">更多活动</h2><h3 class="group-title">未安装客户端活动</h3>{cards('other')}<h3 class="group-title">无需安装</h3>{cards('web')}<h2 id="apps">本机识别</h2><p class="apps">{' · '.join(map(esc, unknown))}</p><p class="foot">活动来源为厂商官方页面。AIHOT 仅作为信息采集与核验方法的参考，不导入其活动数据。</p><p class="foot">本机扫描时间：{esc(data['time'])}</p></main></div></div></html>'''
     if load_state()['dismissed']:
         body = body.replace('<h2 id="apps">', button('restore','all','显示隐藏活动','quiet') + '<h2 id="apps">')
     return body.encode()
 
 CSS=b'''*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#f8f7f3;color:#172322;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}.window{max-width:1500px;margin:auto;background:#fcfbf8;min-height:100vh}header{height:76px;border-bottom:1px solid #e7e5e0;display:flex;align-items:center;gap:24px;padding:0 36px;font-size:22px}.dots{font-size:17px;letter-spacing:3px;color:#28b853}.dots:first-letter{color:#ed6056}header small{margin-left:auto;font-size:14px;color:#6c7773}.layout{display:grid;grid-template-columns:220px 1fr}nav{border-right:1px solid #e7e5e0;padding:40px 20px;display:flex;flex-direction:column;gap:10px}nav a{padding:13px 18px;text-decoration:none;color:#53605c;border-radius:13px}nav a:first-child,nav a:hover{background:#dfebe7;color:#096c60}main{padding:48px 56px;max-width:1250px}h1{font-family:Georgia,"Songti SC",serif;font-size:52px;margin:0 0 10px}h2{font-family:Georgia,"Songti SC",serif;font-size:36px;margin:50px 0 22px}.lede{font-size:18px;color:#6c7773;margin:0 0 34px}.progress{background:#e5f0ec;padding:20px 28px;border-radius:16px;margin-bottom:26px;font-size:18px}.progress b{font-size:26px;color:#087b68}.progress span{float:right;color:#648077;font-size:14px;padding-top:9px}.offer{display:grid;grid-template-columns:minmax(180px,1.2fr) minmax(150px,1fr) 100px minmax(210px,auto);align-items:center;gap:20px;border:1px solid #e3e2dd;border-radius:16px;padding:18px 24px;margin:12px 0;background:#fff}.offer h3{font-size:22px;margin:0 0 4px}.offer p{margin:0;color:#68736f}.amount{font-size:19px;font-weight:600}.pill{background:#e1f0e9;color:#0b7668;border-radius:30px;padding:8px 10px;text-align:center;font-size:14px}.actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}.actions form{margin:0}.done{color:#087b68;font-size:14px}button,.button{border:1px solid #087b68;background:white;color:#087b68;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;text-decoration:none;white-space:nowrap}button.primary,.button.primary{background:#087b68;color:white}.disabled{border-color:#d9dedb;color:#9aa39f;background:#f4f5f3;cursor:not-allowed}.quiet{border:0;color:#7f8a86}.note{margin-top:10px!important;color:#59766f!important}.offer details{grid-column:1/-1;border-top:1px solid #eee;padding-top:12px;color:#60706b}.offer details p{margin:8px 0}.offer a{color:#087b68}.apps,.foot{color:#68736f}.empty{padding:24px;color:#7b8580}@media(max-width:800px){header{padding:0 18px}.layout{display:block}nav{border:0;flex-direction:row;padding:12px;overflow:auto}main{padding:30px 18px}h1{font-size:36px}h2{font-size:29px}.progress span{float:none;display:block}.offer{grid-template-columns:1fr 1fr;gap:10px}.amount{grid-column:1}.pill{grid-column:2}.actions{grid-column:1/-1;justify-content:flex-start}}'''
 CSS+=b'''.history-title{font-size:28px;margin:34px 0 6px}.history-help{color:#68736f;margin:0 0 14px}.history-item{display:grid;grid-template-columns:minmax(180px,1fr) minmax(170px,1fr) auto;gap:12px;align-items:center;background:#fff;border:1px solid #dce8e2;border-radius:14px;padding:16px 22px;margin:10px 0}.history-item strong{font-size:18px}.history-item p{margin:5px 0 0;color:#6c7773;font-size:13px}.history-amount{font-weight:600;color:#386258}.history-item small{grid-column:1/-1;color:#79847f}.claimed{background:#e1f0e9;color:#0b7668;border-color:#c8e2d7;cursor:default}.claimed:disabled{opacity:1}@media(max-width:800px){.history-item{grid-template-columns:1fr auto}.history-amount{grid-column:1}.history-item button{grid-column:2;grid-row:1/3}}'''
+CSS+=b'''.history-item .claimed{grid-column:3}@media(max-width:800px){.history-item .claimed{grid-column:2}}'''
 
 class Handler(BaseHTTPRequestHandler):
     token = secrets.token_urlsafe(24)

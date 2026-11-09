@@ -444,7 +444,8 @@ def render(token, flash=None):
         rows=[]
         for o in data['offers']:
             if group=='more':
-                if o['group']=='installed' or o['product_type']!=product_type: continue
+                if (o['group']=='installed' or o['cycle']!=product_type['cycle']
+                        or o['product_type']!=product_type['type']): continue
             elif o['group'] != group or (product_type and o['cycle'] != product_type): continue
             status=o['record'].get('status','')
             if group=='installed' and (status in ('deferred','needs_review','needs_accessibility') or (o['claim_mode']=='included' and status not in ('claimed','already_claimed'))): continue
@@ -532,10 +533,20 @@ def render(token, flash=None):
         return ''.join(sections)
     def more_sections():
         sections=[]
-        for type_id, title in PRODUCT_TYPES:
-            count=sum(o['group']!='installed' and o['product_type']==type_id for o in data['offers'])
-            if count:
-                sections.append(f'<section class="offer-group"><div class="group-heading"><h3 class="group-title">{title}</h3><span>{count} 项活动</span></div><p class="group-intro">{TYPE_DESCRIPTIONS[type_id]}</p>{cards("more",type_id)}</section>')
+        for cycle, cycle_title, cycle_description in (
+            ('once','一次性活动','一次领取的免费额度与新用户权益。'),
+            ('daily','每日活动','每日领取、每日登录额度与周期性免费用量。'),
+            ('monthly','每月活动','按月更新或每月可领取的活动。'),
+        ):
+            subsections=[]
+            cycle_count=0
+            for type_id, type_title in PRODUCT_TYPES:
+                count=sum(o['group']!='installed' and o['cycle']==cycle and o['product_type']==type_id for o in data['offers'])
+                if count:
+                    cycle_count+=count
+                    subsections.append(f'<section class="offer-subgroup"><div class="group-heading"><h4>{type_title}</h4><span>{count} 项</span></div>{cards("more",{"cycle":cycle,"type":type_id})}</section>')
+            if subsections:
+                sections.append(f'<section class="offer-group"><div class="group-heading"><h3 class="group-title">{cycle_title}</h3><span>{cycle_count} 项活动</span></div><p class="group-intro">{cycle_description}</p>{"".join(subsections)}</section>')
         return ''.join(sections) or '<p class="empty">暂无更多已核实活动。</p>'
     state=load_state()
     today=datetime.now(TZ).date().isoformat()
@@ -560,6 +571,7 @@ CSS+=b'''.task-status{grid-column:1/-1;color:#087b68;background:#edf7f1;border-r
 CSS+=b'''h1,h2,.history-title{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;font-weight:700}'''
 CSS+=b'''.hero-banner{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:cover;border-radius:18px;margin:0 0 28px;border:1px solid #dce9e2}@media(max-width:800px){.hero-banner{aspect-ratio:2/1;object-position:left center}}'''
 CSS+=b'''.claim-mode-badge{display:inline-block;margin-top:10px;padding:5px 9px;border-radius:7px;background:#eef5f1;color:#376a5c;font-size:12px;font-weight:600}.claim-mode-badge.auto{background:#dcefe5;color:#087b68}.claim-mode-badge.manual{background:#f2f2ef;color:#64716a}'''
+CSS+=b'''.offer-subgroup{margin:18px 0 24px}.offer-subgroup h4{font-size:17px;margin:0}.offer-subgroup .group-heading{margin-bottom:8px}'''
 CSS+=b'''.claim-group{margin-top:42px}.claim-group .section-heading{margin-top:0}.batch-bar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:17px 20px;margin-top:14px;border:1px solid #dce9df;border-radius:14px;background:#edf5ef;color:#527264;font-size:14px}.batch-dialog{border:0;border-radius:18px;padding:0;width:min(580px,calc(100% - 28px));box-shadow:0 24px 80px #1b453d3b;color:#172322}.batch-dialog::backdrop{background:#14282080}.batch-dialog-header,.batch-dialog-body{padding:22px 26px}.batch-dialog-header{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #e9efeb}.batch-dialog-header h2{font-size:23px;margin:0}.batch-dialog-header button{border:0;background:#f0f4f1;color:#53695e;padding:3px 11px}.batch-summary{margin:0 0 12px;color:#386258}.batch-track{height:5px;background:#e7efea;border-radius:9px;overflow:hidden}.batch-fill{height:100%;width:0;background:#087b68;transition:width .3s}.batch-result{display:flex;justify-content:space-between;gap:14px;padding:14px 0;border-bottom:1px solid #edf0ed;font-size:14px}.batch-result small{display:block;color:#78867e;margin-top:4px}.batch-result a{display:inline-block;margin-top:5px;color:#087b68}.batch-state{white-space:nowrap;color:#68766e}.batch-state.done{color:#087b68;font-weight:700}.batch-state.attention{color:#9b6118}.batch-state.running::before{content:"";display:inline-block;width:9px;height:9px;margin-right:6px;border:2px solid #8ebfa8;border-top-color:#087b68;border-radius:50%;animation:batch-spin .7s linear infinite}@keyframes batch-spin{to{transform:rotate(360deg)}}@media(max-width:800px){.batch-bar{display:block}.batch-bar button{width:100%;margin-top:12px;white-space:normal}.batch-dialog-header,.batch-dialog-body{padding:18px}}@media(prefers-reduced-motion:reduce){.batch-state.running::before{animation:none}.batch-fill{transition:none}}'''
 
 BATCH_DIALOG='''<dialog class="batch-dialog" id="batch-dialog" aria-labelledby="batch-title"><div class="batch-dialog-header"><h2 id="batch-title">批量处理中</h2><button type="button" id="batch-close" aria-label="关闭">×</button></div><div class="batch-dialog-body"><p class="batch-summary" id="batch-summary" role="status" aria-live="polite"></p><div class="batch-track"><div class="batch-fill" id="batch-fill"></div></div><div id="batch-results"></div></div></dialog>'''

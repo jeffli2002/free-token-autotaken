@@ -10,7 +10,7 @@ After installation, invoke it with `$free-token-autotaken` or ask Codex to find 
 
 ## Data sources
 
-Activity data must come directly from model and agent vendors: official campaign pages, product documentation, pricing pages, developer docs, and official announcements. **AIHOT is a methodology reference only. This project does not import activity data from AIHOT.** New offers belong in `skills/free-token-autotaken/market_catalog.json` or `market_extra.json` only after a person verifies the vendor's official page, eligibility, quota type, scope, expiry, and claim route. `scripts/market_ingest.py` rejects non-HTTPS and AIHOT URLs and requires `verification_state` to be `厂商官方已核实`.
+Activity data must come directly from model and agent vendors: official campaign pages, product documentation, pricing pages, developer docs, and official announcements. **AIHOT is a methodology reference only. This project does not import activity data from AIHOT.** New offers belong in `skills/free-token-autotaken/market_catalog.json` or `market_extra.json` only after a person verifies the vendor's official page, eligibility, quota type, scope, expiry, and claim route. Every offer needs a stable `product_id` shared by activities for the same product and a `product_type` (`llm`, `coding_agent`, `agent`, `creative`, or `developer_platform`). `scripts/market_ingest.py` rejects non-HTTPS and AIHOT URLs and requires `verification_state` to be `厂商官方已核实`.
 
 The repository starts with an empty offer catalog because campaigns change and must be checked against vendor sources before publication. Add current, verified offers for your region before expecting matches.
 
@@ -27,6 +27,8 @@ The repository starts with an empty offer catalog because campaigns change and m
 3. For a recurring offer, choose its “每日领取” or “每月领取” button to create that offer's local Skill and scheduled task. This is opt-in per offer. The task checks hourly and only attempts claims when the target app is already open and the Mac has been idle for two minutes.
 
 The dashboard binds to `127.0.0.1` only. Installed-app scanning and claim history stay on the Mac. The scanner reads app bundle IDs and the Kimi Code CLI path; it does not read passwords, cookies, API keys, or browser profiles.
+
+In **更多**, offers are grouped by product type. **× 不再显示** saves the product ID locally, hiding all current and later offers for that product. **恢复全部已隐藏产品** reverses that preference.
 
 ## Background claims and privacy
 

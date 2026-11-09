@@ -17,7 +17,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "verification_valid_days": 14,
-    "source_note": "Kimi 官方帮助中心，免费测试权益"
+    "source_note": "Kimi 官方帮助中心，免费测试权益",
+    "product_id": "kimi-open-platform",
+    "product_type": "llm"
   },
   {
     "id": "meoo-daily-2000",
@@ -36,7 +38,9 @@
     "source_url": "https://docs.meoo.com/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "meoo",
+    "product_type": "creative"
   },
   {
     "id": "meoo-new-user-5000",
@@ -55,7 +59,9 @@
     "source_url": "https://docs.meoo.com/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "meoo",
+    "product_type": "creative"
   },
   {
     "id": "cloudflare-workers-ai-daily-10k",
@@ -75,7 +81,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "verification_valid_days": 14,
-    "source_note": "Cloudflare Workers AI 官方价格说明"
+    "source_note": "Cloudflare Workers AI 官方价格说明",
+    "product_id": "cloudflare-workers-ai",
+    "product_type": "llm"
   },
   {
     "id": "minimax-code-daily-400",
@@ -94,7 +102,9 @@
     "source_url": "https://code.minimax.cn/docs/code/account/usage",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "minimax-code",
+    "product_type": "coding_agent"
   },
   {
     "id": "qoder-intl-qoduck-daily",
@@ -113,7 +123,9 @@
     "source_url": "https://docs.qoder.com/zh/events/qoduck-free",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "qoder",
+    "product_type": "coding_agent"
   },
   {
     "id": "qoder-cn-daily-100",
@@ -132,7 +144,9 @@
     "source_url": "https://docs.qoder.cn/events/100credits",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "qoder",
+    "product_type": "coding_agent"
   },
   {
     "id": "qoder-cn-welcome-300",
@@ -151,7 +165,9 @@
     "source_url": "https://docs.qoder.cn/product-overview/account-and-subscription",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "qoder",
+    "product_type": "coding_agent"
   },
   {
     "id": "trae-daily-100",
@@ -170,7 +186,9 @@
     "source_url": "https://docs.trae.cn/ide_plans-and-billing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "trae",
+    "product_type": "coding_agent"
   },
   {
     "id": "trae-monthly-500",
@@ -189,7 +207,9 @@
     "source_url": "https://www.trae.cn/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "trae",
+    "product_type": "coding_agent"
   },
   {
     "id": "trae-new-user-2000",
@@ -208,7 +228,9 @@
     "source_url": "https://docs.trae.cn/ide_plans-and-billing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "trae",
+    "product_type": "coding_agent"
   },
   {
     "id": "workbuddy-monthly-500",
@@ -229,7 +251,9 @@
     "source_url": "https://www.workbuddy.cn/docs/workbuddy/Pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "workbuddy",
+    "product_type": "agent"
   },
   {
     "id": "drex-new-user-5",
@@ -248,7 +272,9 @@
     "source_url": "https://console.nace.ai/docs/drex/reference/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "drex",
+    "product_type": "llm"
   },
   {
     "id": "drex-monthly-5",
@@ -267,7 +293,9 @@
     "source_url": "https://console.nace.ai/docs/drex/reference/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "drex",
+    "product_type": "llm"
   },
   {
     "id": "antling-monthly-10",
@@ -286,7 +314,9 @@
     "source_url": "https://developer.ant-ling.com/zh-CN/docs/getting-started/changelog/billing-upgrade/",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "antling",
+    "product_type": "llm"
   },
   {
     "id": "antling-new-user-20",
@@ -305,7 +335,9 @@
     "source_url": "https://developer.ant-ling.com/zh-CN/docs/getting-started/changelog/billing-upgrade/",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "antling",
+    "product_type": "llm"
   },
   {
     "id": "edgeone-makers-monthly-500k",
@@ -324,7 +356,9 @@
     "source_url": "https://pages.edgeone.ai/zh/document/limits-and-quotas",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "edgeone-makers",
+    "product_type": "developer_platform"
   },
   {
     "id": "elevenlabs-free-10k",
@@ -343,7 +377,9 @@
     "source_url": "https://elevenlabs.io/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "elevenlabs",
+    "product_type": "creative"
   },
   {
     "id": "zed-student-10-month",
@@ -362,7 +398,9 @@
     "source_url": "https://zed.dev/education",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "zed",
+    "product_type": "coding_agent"
   },
   {
     "id": "zed-trial-5",
@@ -381,7 +419,9 @@
     "source_url": "https://zed.dev/docs/account/plans-and-pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "zed",
+    "product_type": "coding_agent"
   },
   {
     "id": "huaweicloud-codearts-invite-1000",
@@ -401,7 +441,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "active_until": "2026-11-15",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "codearts",
+    "product_type": "coding_agent"
   },
   {
     "id": "autoclaw-1111-50m",
@@ -421,7 +463,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "active_until": "2026-11-15",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "autoclaw",
+    "product_type": "agent"
   },
   {
     "id": "baidu-qianfan-new-user-20",
@@ -440,7 +484,9 @@
     "source_url": "https://cloud.baidu.com/doc/QIANFAN/index.html",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "baidu-qianfan",
+    "product_type": "llm"
   },
   {
     "id": "aliyun-bailian-new-user-model-quota",
@@ -460,7 +506,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "verification_valid_days": 14,
-    "source_note": "阿里云百炼官方文档；具体模型额度以北京地域控制台模型列表为准"
+    "source_note": "阿里云百炼官方文档；具体模型额度以北京地域控制台模型列表为准",
+    "product_id": "aliyun-bailian",
+    "product_type": "llm"
   },
   {
     "id": "tokenhub-new-user-1m",
@@ -479,7 +527,9 @@
     "source_url": "https://cloud.tencent.com/document/product/1823/130053",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "tencent-tokenhub",
+    "product_type": "llm"
   },
   {
     "id": "volcengine-ark-free-inference-new-user",
@@ -498,7 +548,9 @@
     "source_url": "https://docs.volcengine.com/docs/ark/free-inference-quota?lang=zh",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "volcengine-ark",
+    "product_type": "llm"
   },
   {
     "id": "cloudbase-miniapp-growth-ai-package",
@@ -518,7 +570,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "active_until": "2026-12-31",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "cloudbase",
+    "product_type": "developer_platform"
   },
   {
     "id": "aliyun-yungongkaiwu-student-300",
@@ -537,7 +591,9 @@
     "source_url": "https://help.aliyun.com/zh/model-studio/introduction-to-yungongkaiwu",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "aliyun-bailian",
+    "product_type": "llm"
   },
   {
     "id": "sensenova-beta-free-60k",
@@ -556,7 +612,9 @@
     "source_url": "https://www.sensenova.cn/token-plan",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "sensenova",
+    "product_type": "llm"
   },
   {
     "id": "opencode-free-models",
@@ -575,7 +633,9 @@
     "source_url": "https://opencode.ai/docs/console/models/",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "opencode",
+    "product_type": "coding_agent"
   },
   {
     "id": "siliconflow-verified-16-voucher",
@@ -595,7 +655,9 @@
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
     "active_until": "2026-12-31",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "siliconflow",
+    "product_type": "llm"
   },
   {
     "id": "zcode-new-user-5d-8m",
@@ -614,7 +676,9 @@
     "source_url": "https://zcode.z.ai/cn/docs/configuration",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "zcode",
+    "product_type": "coding_agent"
   },
   {
     "id": "siliconflow-free-priced-models",
@@ -633,6 +697,8 @@
     "source_url": "https://www.siliconflow.cn/pricing",
     "verified_on": "2026-11-09",
     "verification_state": "厂商官方已核实",
-    "verification_valid_days": 14
+    "verification_valid_days": 14,
+    "product_id": "siliconflow",
+    "product_type": "llm"
   }
 ]

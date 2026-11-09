@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Safely import offers already verified from vendor-controlled sources."""
-import argparse, json, tempfile
+import argparse, json, re, tempfile
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -9,7 +9,8 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
 META = ROOT / 'market_meta.json'
 ALLOWED = {'market_catalog.json', 'market_extra.json'}
-REQUIRED = {'id','name','vendor','amount','cycle','scope','requirements','official_url','verified_on','verification_state'}
+REQUIRED = {'id','name','vendor','amount','cycle','scope','requirements','official_url','verified_on','verification_state','product_id','product_type'}
+PRODUCT_TYPES = {'llm','coding_agent','agent','creative','developer_platform'}
 
 def validate(items):
     if not isinstance(items, list) or not items:
@@ -18,6 +19,10 @@ def validate(items):
     for item in items:
         missing=REQUIRED-set(item)
         if missing: raise ValueError(f"{item.get('id','?')} 缺字段: {sorted(missing)}")
+        if not re.fullmatch(r'[a-z0-9]+(?:-[a-z0-9]+)*', item['product_id']):
+            raise ValueError(f"{item['id']} 的 product_id 必须是稳定的产品标识")
+        if item['product_type'] not in PRODUCT_TYPES:
+            raise ValueError(f"{item['id']} 的 product_type 不在支持的分类中")
         url=urlparse(item['official_url'])
         if url.scheme!='https' or not url.hostname or url.hostname=='aihot.news' or url.hostname.endswith('.aihot.news'):
             raise ValueError(f"{item['id']} 必须引用厂商 HTTPS 官方页面，不能引用 AIHOT")

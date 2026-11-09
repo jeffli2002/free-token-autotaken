@@ -14,11 +14,7 @@ This Skill package includes the local web dashboard and macOS connector. When th
 1. Discover current offers across AI model API, coding agent, desktop agent, and related developer products. Confirm the offer on a vendor-controlled page. Record the source URL, checked date, eligibility, region, quota type, applicable products/models, expiry, and claim route. Treat aggregator-only mentions as unverified leads and exclude them from confirmed recommendations.
 2. Match confirmed offers against apps the user says are installed or asks you to scan. Keep product credits, subscription quota, API credit, and free usage limits distinct.
 3. When the user asks for personalized recommendations, inspect only the current project/workspace or a directory the user explicitly selects. Infer work context from project names, README/project descriptions, and dependency/build manifests. Do not recursively scan the home directory or unrelated folders. Skip credentials, .env*, browser data, account data, private keys, databases, and personal documents unless the user names a specific file for review. Summarize only the minimum context needed; do not copy source text or sensitive details into a report.
-4. Classify each confirmed offer into exactly one group:
-   - **Installed and usable:** relevant offer for a detected or user-confirmed installed app.
-   - **Recommended to install:** relevant offer for an absent app, with a short reason tied to observed project context and an official download link. Do not install automatically.
-   - **Other not installed:** remaining absent-app offers that do not fit the inferred work context.
-   Offers that need no installation are shown separately and may still be recommended when relevant.
+4. Show matched installed offers in the installed section. Show all other verified offers under **更多**, grouped by product type: LLM / 模型 API, Coding Agent, 通用 Agent, 创作工具, or 开发平台. Keep the `product_id` stable across activities for the same product. When a user selects **× 不再显示**, save that product ID locally and filter its current and future activities until the user explicitly restores hidden products. Do not install software automatically.
 5. Explain why an offer fits, cite the official source, and label uncertainty. Ask before any account creation, software installation, or claim action that spends money or changes account settings. Never report a claim as successful without vendor confirmation.
 
 ## Privacy
